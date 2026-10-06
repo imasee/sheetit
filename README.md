@@ -45,9 +45,12 @@ The Google access token and its expiry are saved in the current browser tab’s 
 
 Access tokens remain readable by scripts running on this origin, so keep the app’s dependencies and deployment origin secure. All Drive and Sheets requests go directly from the browser to Google; Sheetit has no server-side copy of the ledger. This build does not include an offline write queue or conflict resolution for simultaneous edits from multiple clients.
 
+## Branch and release workflow
+
+Use `develop` for active work. Open pull requests for feature branches into `develop`; when a release is ready, open a pull request from `develop` into `main`. Pull requests targeting `main` run a production build check. Merging into `main` starts the GitHub Pages deployment automatically, so the site is built and published by GitHub Actions rather than from a local machine.
+
 ## GitHub Pages deployment
 
-The `main` branch is the production branch; `develop` is for ongoing work. Pull requests into `main` run a production build check. Merging a pull request into `main` runs `.github/workflows/deploy-pages.yml` on GitHub Actions and publishes the Angular app at `https://imasee.github.io/sheetit/`. The deployment build and publishing happen on GitHub; no local deployment command is needed. Enable **Settings → Pages → Build and deployment → GitHub Actions** in the repository once. Add the Google OAuth web client ID as the Actions repository secret `GOOGLE_CLIENT_ID`. This client ID is embedded in the browser bundle at build time and is a public OAuth identifier, not a client secret. In Google Cloud, authorize `https://imasee.github.io` as a JavaScript origin and `https://imasee.github.io/sheetit/` as the app URL. Never put a Google OAuth client secret or service-account key in this browser app or its Actions secrets.
-
+The production site is published at `https://imasee.github.io/sheetit/`. Enable **Settings → Pages → Build and deployment → GitHub Actions** in the repository once. Add the Google OAuth web client ID as the Actions repository secret `GOOGLE_CLIENT_ID`. This client ID is embedded in the browser bundle at build time and is a public OAuth identifier, not a client secret. In Google Cloud, authorize `https://imasee.github.io` as a JavaScript origin and `https://imasee.github.io/sheetit/` as the app URL. Never put a Google OAuth client secret or service-account key in this browser app or its Actions secrets.
 
 Configure public deployment settings under **Settings → Secrets and variables → Actions → Variables**: `APP_NAME` (default `Sheetit`), `SPREADSHEET_NAMING_PATTERN` (default `[sheetit]-{name}-{version}`; must contain `{name}` and `{version}` once each), and `DEFAULT_SPREADSHEET_NAME` (default `Personal Finance`). The workflow applies these values during the build, so these branding and spreadsheet naming defaults can be changed without editing application source.
