@@ -16,10 +16,7 @@
     "module": "preserve",
     "moduleResolution": "bundler",
     "lib": ["ES2022", "dom"],
-    "useDefineForClassFields": false,
-    "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true,
-    "strictTemplates": true
+    "useDefineForClassFields": false
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

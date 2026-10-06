@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router } from '@angular/router';
+import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
@@ -11,18 +13,20 @@ import { SpreadsheetWorkspaceService } from './core/services/spreadsheet-workspa
 import { GoogleIdentityService } from './core/google/google-identity.service';
 
 @Component({
-  selector: 'ts-root',
+  selector: 'ts-app-shell',
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   readonly themeService = inject(ThemeService);
   readonly store = inject(TrackseeStore);
   readonly workspace = inject(SpreadsheetWorkspaceService);
   readonly identity = inject(GoogleIdentityService);
+  private readonly router = inject(Router);
+  private readonly announcer = inject(LiveAnnouncer);
   readonly connectionBusy = signal(false);
   readonly connectionError = signal<string | null>(null);
   private readonly dialog = inject(MatDialog);
@@ -31,6 +35,10 @@ export class AppComponent {
     { label: 'Transactions', icon: 'receipt_long', route: '/transactions' },
     { label: 'People', icon: 'group', route: '/people' },
   ];
+
+  ngOnInit(): void {
+    if (this.workspace.active() && this.store.syncStatus() === 'idle') void this.syncSelected();
+  }
 
   openNewTransaction(): void {
     if (!this.workspace.active()) {
@@ -81,7 +89,9 @@ export class AppComponent {
 
   async signOut(): Promise<void> {
     this.identity.clearSession();
+    this.store.resetLedger();
     this.connectionError.set('Google session cleared. Your selected spreadsheet is saved for next time.');
+    await this.router.navigate(['/login'], { queryParams: { reason: 'signed-out' } });
   }
 
   private async syncSelected(): Promise<void> {
@@ -91,8 +101,10 @@ export class AppComponent {
     this.store.resetLedger();
     try {
       await this.store.sync();
+      await this.announcer.announce(`Ledger sync complete. ${this.store.transactions().length} transactions and ${this.store.people().length} people loaded.`, 'polite');
     } catch (error) {
       this.connectionError.set(error instanceof Error ? error.message : 'Could not sync this spreadsheet.');
+      await this.announcer.announce('Ledger sync failed. Check the spreadsheet connection in Settings.', 'assertive');
     } finally {
       this.connectionBusy.set(false);
     }

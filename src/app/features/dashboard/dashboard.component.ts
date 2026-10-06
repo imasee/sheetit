@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
@@ -13,18 +13,25 @@ import { CURRENCIES, Currency, Transaction } from '../../core/models/tracksee.mo
 
 @Component({
   selector: 'ts-dashboard', standalone: true,
-  imports: [MatCardModule, MatIconModule, CurrencyPipe, DatePipe, RouterLink],
+  imports: [MatCardModule, MatIconModule, DatePipe, RouterLink],
   templateUrl: './dashboard.component.html', styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   readonly store = inject(TrackseeStore);
   readonly workspace = inject(SpreadsheetWorkspaceService);
-  readonly currencies = CURRENCIES;
+  readonly currencies = computed(() => {
+    const used = new Set(this.store.transactions().map((transaction) => transaction.currency));
+    return CURRENCIES.filter((currency) => used.has(currency));
+  });
   readonly syncing = signal(false);
   readonly syncError = signal<string | null>(null);
   private readonly announcer = inject(LiveAnnouncer);
   private readonly dialog = inject(MatDialog);
+
+  ngOnInit(): void {
+    if (this.workspace.active() && this.store.syncStatus() === 'idle') void this.syncLedger();
+  }
 
   async syncLedger(): Promise<void> {
     if (this.syncing()) return;

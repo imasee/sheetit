@@ -5,20 +5,26 @@
   </button>
 </section>
 
-@if (syncError(); as error) { <div class="error-banner" role="alert"><mat-icon aria-hidden="true">error_outline</mat-icon><div><strong>Couldn't sync your ledger</strong><span>{{ error }}</span><a routerLink="/settings">Review connection settings</a></div></div> }
+@if (syncError() || workspace.discoveryError() || store.error(); as error) { <div class="error-banner" role="alert"><mat-icon aria-hidden="true">error_outline</mat-icon><div><strong>Ledger connection issue</strong><span>{{ error }}</span><a routerLink="/settings">Review connection settings</a></div></div> }
 
 <section class="summary-section" aria-labelledby="currency-summary-title">
-  <div class="section-heading"><div><h2 id="currency-summary-title">Position by currency</h2><p>Balances stay separate. No currency conversion is applied.</p></div><span class="section-meta">{{ currencies.length }} currencies</span></div>
+  <div class="section-heading"><div><h2 id="currency-summary-title">Ledger summary</h2><p>Totals stay separate by currency. No currency conversion is applied.</p></div><span class="section-meta">{{ currencies().length }} currencies</span></div>
   <div class="summary-grid">
-    @for (currency of currencies; track currency) {
-      <mat-card class="summary-card" appearance="outlined">
-        <div class="card-top"><span class="currency-badge">{{ currency }}</span><mat-icon aria-hidden="true">{{ store.globalCurrencySummary()[currency].netPosition >= 0 ? 'north_east' : 'south_west' }}</mat-icon></div>
-        <span class="metric-label">Net position</span>
-        <strong class="net-value" [class.positive]="store.globalCurrencySummary()[currency].netPosition > 0" [class.negative]="store.globalCurrencySummary()[currency].netPosition < 0">{{ formatMoney(store.globalCurrencySummary()[currency].netPosition, currency) }}</strong>
-        <div class="card-divider"></div>
-        <div class="mini-metrics"><div><span>Owed to you</span><strong class="positive">{{ formatMoney(store.globalCurrencySummary()[currency].totalReceivable, currency) }}</strong></div><div><span>You owe</span><strong class="negative">{{ formatMoney(store.globalCurrencySummary()[currency].totalPayable, currency) }}</strong></div></div>
-      </mat-card>
-    }
+    <mat-card class="summary-card" appearance="outlined" aria-labelledby="owe-title">
+      <div class="card-top"><span class="metric-label" id="owe-title">Total I owe</span><mat-icon aria-hidden="true">south_west</mat-icon></div>
+      @if (currencies().length) { <ul class="currency-totals">@for (currency of currencies(); track currency) { <li><span class="currency-badge">{{ currency }}</span><strong class="negative">{{ formatMoney(store.globalCurrencySummary()[currency].totalPayable, currency) }}</strong></li> }</ul> }
+      @else { <p class="summary-empty">Add a transaction to see totals by currency.</p> }
+    </mat-card>
+    <mat-card class="summary-card" appearance="outlined" aria-labelledby="owed-title">
+      <div class="card-top"><span class="metric-label" id="owed-title">Owed to me</span><mat-icon aria-hidden="true">north_east</mat-icon></div>
+      @if (currencies().length) { <ul class="currency-totals">@for (currency of currencies(); track currency) { <li><span class="currency-badge">{{ currency }}</span><strong class="positive">{{ formatMoney(store.globalCurrencySummary()[currency].totalReceivable, currency) }}</strong></li> }</ul> }
+      @else { <p class="summary-empty">Add a transaction to see totals by currency.</p> }
+    </mat-card>
+    <mat-card class="summary-card" appearance="outlined" aria-labelledby="net-title">
+      <div class="card-top"><span class="metric-label" id="net-title">Net position</span><mat-icon aria-hidden="true">account_balance</mat-icon></div>
+      @if (currencies().length) { <ul class="currency-totals">@for (currency of currencies(); track currency) { <li><span class="currency-badge">{{ currency }}</span><strong [class.positive]="store.globalCurrencySummary()[currency].netPosition > 0" [class.negative]="store.globalCurrencySummary()[currency].netPosition < 0">{{ formatMoney(store.globalCurrencySummary()[currency].netPosition, currency) }}</strong></li> }</ul> }
+      @else { <p class="summary-empty">Add a transaction to see totals by currency.</p> }
+    </mat-card>
   </div>
 </section>
 
@@ -29,7 +35,7 @@
       <div class="people-list">
         @for (entry of store.peersWithPeople(); track entry.entityId) {
           <article class="person-row"><div class="person-avatar" aria-hidden="true">{{ (entry.person?.name ?? '?').slice(0, 1).toUpperCase() }}</div><div class="person-info"><strong>{{ entry.person?.name ?? 'Unknown person' }}</strong><span>{{ entry.person?.email || entry.person?.phone || 'Peer ledger' }}</span></div><div class="balance-stack">
-            @for (currency of currencies; track currency) { @if (entry.balances[currency] !== 0) { <span [class.positive]="entry.balances[currency] > 0" [class.negative]="entry.balances[currency] < 0">{{ currency }} {{ formatMoney(entry.balances[currency], currency) }}</span> } }
+            @for (currency of currencies(); track currency) { @if (entry.balances[currency] !== 0) { <span [class.positive]="entry.balances[currency] > 0" [class.negative]="entry.balances[currency] < 0">{{ currency }} {{ formatMoney(entry.balances[currency], currency) }}</span> } }
             @if (entry.balances.CAD === 0 && entry.balances.INR === 0 && entry.balances.USD === 0) { <span class="settled">Settled</span> }
           </div></article>
         }

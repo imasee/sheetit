@@ -13,7 +13,7 @@ Tracksee is a standalone Angular 21 personal ledger. The browser talks directly 
 1. Select or create a Google Cloud project and enable both **Google Sheets API** and **Google Drive API**.
 2. Configure the OAuth consent screen and create an OAuth **Web application** client ID. Add each development and production origin to its authorized JavaScript origins.
 3. Set `googleClientId` in `src/environments/environment.ts`. Tracksee is a public browser client; do not add a client secret.
-4. Open Tracksee and choose **Connect Google**. Google asks for spreadsheet access and Drive metadata search. Tracksee then looks for spreadsheet names matching the configured pattern.
+4. Open Tracksee and sign in with Google. The login screen is the only entry to the protected app. Google asks for basic profile identity, spreadsheet access, and Drive metadata search. Tracksee validates the returned access token against Google's UserInfo endpoint, then looks for spreadsheet names matching the configured pattern.
 
 The default pattern is `[tracksee]-{name}-{version}`. The default name is `Personal Finance`; its first sheet is titled `[tracksee]-Personal Finance-1`. Creating another ledger with the same name increments the version (`-2`, `-3`, and so on). The app stores the selected spreadsheet for later visits. No spreadsheet ID is entered in environment configuration.
 
@@ -36,6 +36,6 @@ Add people beneath the `People` header using unique entity IDs. Transactions ref
 
 ## Authentication persistence
 
-The Google access token and its expiry are saved in the current browser tab’s `sessionStorage`, so a page reload in that tab can reuse a still-valid token. The token is short lived and is cleared on sign-out or tab-session end; Google must issue a new token after it expires. Tracksee does not request or store a refresh token. The selected spreadsheet reference and theme preference are saved in local storage.
+The Google access token and its expiry are saved in the current browser tab’s `sessionStorage`, so a page reload in that tab can reuse a still-valid token. Protected routes validate the token with Google's UserInfo endpoint. An expired/invalid token or a Google API `401` clears the session and returns the user to login; the app also provides a sign-out action in the sidebar and Settings. The token is short lived and is cleared on sign-out or tab-session end; Google must issue a new token after it expires. Tracksee does not request or store a refresh token. The selected spreadsheet reference and theme preference are saved in local storage.
 
 Access tokens remain readable by scripts running on this origin, so keep the app’s dependencies and deployment origin secure. All Drive and Sheets requests go directly from the browser to Google; Tracksee has no server-side copy of the ledger. This build does not include an offline write queue or conflict resolution for simultaneous edits from multiple clients.

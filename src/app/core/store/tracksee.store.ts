@@ -70,7 +70,7 @@ export const TrackseeStore = signalStore(
       try {
         await sheets.appendTransaction(txn);
         patchState(store, (state) => ({
-          transactions: [txn, ...state.transactions], syncStatus: 'ready',
+          transactions: [txn, ...state.transactions], syncStatus: 'ready' as const,
           lastSyncedAt: new Date().toISOString(), error: null,
         }));
       } catch (error) {

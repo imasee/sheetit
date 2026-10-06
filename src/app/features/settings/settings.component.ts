@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { GoogleIdentityService } from '../../core/google/google-identity.service';
 import { ThemeName, ThemeService } from '../../core/services/theme.service';
@@ -20,6 +21,7 @@ export class SettingsComponent {
   readonly busy = signal(false);
   readonly message = signal<string | null>(null);
   private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
   readonly themes: { id: ThemeName; name: string; description: string }[] = [
     { id: 'dark-slate', name: 'Dark Slate', description: 'Quiet graphite surfaces' },
     { id: 'midnight-zinc', name: 'Midnight Zinc', description: 'Deep neutral contrast' },
@@ -56,7 +58,11 @@ export class SettingsComponent {
 
   async createSpreadsheet(): Promise<void> { await this.openSpreadsheetDialog('new'); }
 
-  signOut(): void { this.identity.clearSession(); this.message.set('Google sign-in cleared for this tab session. Your selected spreadsheet remains saved.'); }
+  async signOut(): Promise<void> {
+    this.identity.clearSession();
+    this.store.resetLedger();
+    await this.router.navigate(['/login'], { queryParams: { reason: 'signed-out' } });
+  }
 
   private async syncSelected(): Promise<void> {
     this.store.resetLedger();

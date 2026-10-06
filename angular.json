@@ -33,6 +33,18 @@
             "development": { "optimization": false, "extractLicenses": false, "sourceMap": true }
           },
           "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "tracksee:build:production"
+            },
+            "development": {
+              "buildTarget": "tracksee:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
         }
       }
     }
