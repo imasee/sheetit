@@ -17,14 +17,17 @@ Sheetit is a standalone Angular 21 personal ledger. The browser talks directly t
 
 The default pattern is `[sheetit]-{name}-{version}`. The default name is `Personal Finance`; its first sheet is titled `[sheetit]-Personal Finance-1`. Creating another ledger with the same name increments the version (`-2`, `-3`, and so on). Existing `[tracksee]-...` spreadsheets remain discoverable. The app stores the selected spreadsheet for later visits. No spreadsheet ID is entered in environment configuration.
 
-If no matching spreadsheet exists, Sheetit asks before creating one. **Not now** leaves the dashboard blank. The **New** action in the sidebar opens the same naming dialog at any time. A new file is created with `People` and `Transactions` tabs; first sync fills the header rows.
+If no matching spreadsheet exists, Sheetit asks before creating one. **Not now** leaves the dashboard blank. The **New** action in the sidebar opens the same naming dialog at any time. A new file is created with `People`, `Transactions`, and `Payments` tabs; first sync fills the header rows.
 
 ## Spreadsheet schema
 
 - `People!A:E`: `EntityId`, `Name`, `Phone`, `Email`, `Notes`
 - `Transactions!A:J`: `TxId`, `Date`, `EntityId`, `Type`, `Amount`, `Currency`, `Category`, `Notes`, `Status`, `CreatedAt`
+- `Payments!A:I`: `PaymentId`, `TxId`, `Date`, `Direction`, `Amount`, `Currency`, `Notes`, `Status`, `CreatedAt`
 
 Add people beneath the `People` header using unique entity IDs. Transactions refer to those IDs. Sheetit searches Drive by its current and legacy static prefixes before `{name}` and validates each result against the matching full pattern.
+
+Payments are separate, append-only rows linked to a transaction by `TxId`. Voided transactions remain in the sheet for audit history, and neither they nor their linked payments affect balances.
 
 Notes/comments can be entered and viewed in development mode. Production builds hide these values in the app interface; the existing `Notes` columns remain intact in the Sheets schema.
 
@@ -41,3 +44,7 @@ Notes/comments can be entered and viewed in development mode. Production builds 
 The Google access token and its expiry are saved in the current browser tab’s `sessionStorage`, so a page reload in that tab can reuse a still-valid token. Protected routes validate the token with Google's UserInfo endpoint. An expired/invalid token or a Google API `401` clears the session and returns the user to login; the app also provides a sign-out action in the sidebar and Settings. The token is short lived and is cleared on sign-out or tab-session end; Google must issue a new token after it expires. Sheetit does not request or store a refresh token. The selected spreadsheet reference and theme preference are saved in local storage.
 
 Access tokens remain readable by scripts running on this origin, so keep the app’s dependencies and deployment origin secure. All Drive and Sheets requests go directly from the browser to Google; Sheetit has no server-side copy of the ledger. This build does not include an offline write queue or conflict resolution for simultaneous edits from multiple clients.
+
+## GitHub Pages deployment
+
+The `main` branch is the production branch; `develop` is for ongoing work. Merging or pushing to `main` runs `.github/workflows/deploy-pages.yml` and publishes the Angular app at `https://imasee.github.io/sheetit/`. Enable **Settings → Pages → Build and deployment → GitHub Actions** in the repository once. Add the Google OAuth web client ID as the Actions repository secret `GOOGLE_CLIENT_ID`. This client ID is embedded in the browser bundle at build time and is a public OAuth identifier, not a client secret. In Google Cloud, authorize `https://imasee.github.io` as a JavaScript origin and `https://imasee.github.io/sheetit/` as the app URL. Never put a Google OAuth client secret or service-account key in this browser app or its Actions secrets.

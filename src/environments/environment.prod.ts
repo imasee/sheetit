@@ -2,7 +2,7 @@
 export const environment = {
   production: true,
   showLocalComments: false,
-  googleClientId: '[GCP_API_KEY]',
+  googleClientId: 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com',
   spreadsheetNamingPattern: '[sheetit]-{name}-{version}',
   defaultSpreadsheetName: 'Personal Finance',
   scopes: [
