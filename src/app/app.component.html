@@ -1,0 +1,53 @@
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Primary navigation">
+    <a class="brand" routerLink="/dashboard" aria-label="Tracksee home">
+      <span class="brand-mark"><mat-icon aria-hidden="true">account_balance_wallet</mat-icon></span>
+      <span class="brand-name">tracksee<span class="brand-period">.</span></span>
+    </a>
+
+    <div class="workspace-label">WORKSPACE</div>
+    <section class="spreadsheet-card" aria-label="Active spreadsheet">
+      <div class="spreadsheet-card-label"><mat-icon aria-hidden="true">table_chart</mat-icon><span>SPREADSHEET</span></div>
+      @if (workspace.active(); as activeSpreadsheet) { <strong class="spreadsheet-name" [title]="activeSpreadsheet.title">{{ activeSpreadsheet.ledgerName }} <span>v{{ activeSpreadsheet.version }}</span></strong> }
+      @else { <span class="spreadsheet-empty">No spreadsheet selected</span> }
+      @if (workspace.available().length) {
+        <label class="visually-hidden" for="spreadsheet-choice">Select spreadsheet</label>
+        <select id="spreadsheet-choice" [value]="workspace.active()?.id ?? ''" (change)="selectSpreadsheet($any($event.target).value)" [disabled]="connectionBusy()">
+          <option value="">Choose a spreadsheet</option>
+          @for (spreadsheet of workspace.available(); track spreadsheet.id) { <option [value]="spreadsheet.id">{{ spreadsheet.ledgerName }} · v{{ spreadsheet.version }}</option> }
+        </select>
+      }
+      <div class="spreadsheet-actions">
+        <button type="button" class="spreadsheet-sync" (click)="connectOrSync()" [disabled]="connectionBusy()"><mat-icon aria-hidden="true">{{ connectionBusy() ? 'sync' : workspace.active() ? 'sync' : 'link' }}</mat-icon>{{ connectionBusy() ? 'Working…' : workspace.active() ? 'Sync' : 'Connect' }}</button>
+        <button type="button" class="spreadsheet-new" (click)="openNewSpreadsheet()" [disabled]="connectionBusy()" aria-label="Create a new spreadsheet"><mat-icon aria-hidden="true">add</mat-icon>New</button>
+      </div>
+      @if (connectionError(); as error) { <p class="connection-error" role="status">{{ error }}</p> }
+    </section>
+    <nav class="main-nav">
+      @for (item of navItems; track item.route) {
+        <a class="nav-link" [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-spacer"></div>
+    <button class="new-entry" type="button" (click)="openNewTransaction()" [disabled]="!workspace.active()"><mat-icon aria-hidden="true">add</mat-icon>New transaction</button>
+    <a class="nav-link settings-link" routerLink="/settings" routerLinkActive="active"><mat-icon aria-hidden="true">tune</mat-icon><span>Settings</span></a>
+    <div class="sidebar-foot"><span class="connection-dot" [class.connected]="store.syncStatus() === 'ready'"></span><span>{{ store.syncStatus() === 'ready' ? 'Sheets connected' : identity.accessToken() ? 'Google connected' : 'Local workspace' }}</span><button type="button" class="sign-out" (click)="signOut()" [disabled]="!identity.accessToken()">Sign out</button></div>
+  </aside>
+
+  <div class="main-column">
+    <header class="topbar">
+      <div class="topbar-left"><span class="topbar-context">Personal finance</span><span class="topbar-divider">/</span><span class="topbar-current">{{ workspace.active()?.ledgerName ?? 'Your workspace' }}</span></div>
+      <div class="topbar-actions">
+        <button class="mobile-sheet-action" type="button" (click)="connectOrSync()" aria-label="Connect or sync spreadsheet" [disabled]="connectionBusy()"><mat-icon>table_chart</mat-icon></button>
+        <a class="icon-button settings-button" routerLink="/settings" aria-label="Settings"><mat-icon>settings</mat-icon></a>
+        <span class="user-avatar" aria-label="Personal ledger">T</span>
+      </div>
+    </header>
+    <main id="main-content" class="page-content"><router-outlet /></main>
+  </div>
+
+  <button class="mobile-create" type="button" (click)="openNewTransaction()" [disabled]="!workspace.active()" aria-label="Add transaction"><mat-icon>add</mat-icon></button>
+</div>

@@ -1,0 +1,11 @@
+<div class="dialog-heading"><span class="dialog-icon"><mat-icon>table_view</mat-icon></span><button mat-icon-button mat-dialog-close type="button" aria-label="Close"><mat-icon>close</mat-icon></button></div>
+<h2 mat-dialog-title id="spreadsheet-dialog-title">{{ data.mode === 'offer' ? 'Create your first ledger?' : 'New spreadsheet' }}</h2>
+<mat-dialog-content>
+  @if (data.mode === 'offer') { <p class="intro">No Tracksee spreadsheet was found in your Google Drive. Create one now, or keep using the blank dashboard and create it later.</p> }
+  @else { <p class="intro">Choose a name for this ledger. Tracksee adds its identifier and the next version automatically.</p> }
+  <form [formGroup]="form" (ngSubmit)="create()" id="spreadsheet-form">
+    <mat-form-field appearance="outline"><mat-label>Spreadsheet name</mat-label><input matInput formControlName="name" maxlength="60" placeholder="{{ environment.defaultSpreadsheetName }}" /><mat-hint>The saved title follows {{ environment.spreadsheetNamingPattern }}</mat-hint>@if (form.controls.name.hasError('required')) { <mat-error>Enter a name.</mat-error> }</mat-form-field>
+    @if (error(); as message) { <div class="form-error" role="alert"><mat-icon>error_outline</mat-icon>{{ message }}</div> }
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button mat-button type="button" mat-dialog-close [disabled]="saving()">{{ data.mode === 'offer' ? 'Not now' : 'Cancel' }}</button><button mat-flat-button color="primary" type="submit" form="spreadsheet-form" [disabled]="saving()"><mat-icon>{{ saving() ? 'sync' : 'add' }}</mat-icon>{{ saving() ? 'Creating…' : 'Create spreadsheet' }}</button></mat-dialog-actions>

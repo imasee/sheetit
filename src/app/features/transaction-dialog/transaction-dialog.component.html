@@ -1,0 +1,18 @@
+<div class="dialog-heading"><div><span class="dialog-kicker">LEDGER ENTRY</span><h2 mat-dialog-title id="transaction-dialog-title">New transaction</h2><p>Record a movement in your personal ledger.</p></div><button mat-icon-button mat-dialog-close type="button" aria-label="Close transaction form"><mat-icon>close</mat-icon></button></div>
+<mat-dialog-content>
+  <form [formGroup]="form" (ngSubmit)="save()" id="transaction-form">
+    <mat-form-field appearance="outline"><mat-label>Transaction type</mat-label><mat-select formControlName="type">@for (type of types; track type) { <mat-option [value]="type">{{ type.replaceAll('_', ' ') }}</mat-option> }</mat-select><mat-error>Choose a transaction type.</mat-error></mat-form-field>
+    @if (form.controls.type.value !== 'Expense') {
+      <mat-form-field appearance="outline"><mat-label>Person</mat-label><mat-select formControlName="entityId"><mat-option value="" disabled>Select a person</mat-option>@for (person of store.people(); track person.entityId) { <mat-option [value]="person.entityId">{{ person.name }}</mat-option> }</mat-select>
+        @if (!store.people().length) { <mat-hint>Add a person to the People tab in your Google Sheet, then sync.</mat-hint> }<mat-error>Select a person.</mat-error></mat-form-field>
+    } @else { <mat-form-field appearance="outline"><mat-label>Category</mat-label><input matInput formControlName="category" placeholder="e.g. Groceries" /></mat-form-field> }
+    <div class="field-row">
+      <mat-form-field appearance="outline"><mat-label>Amount</mat-label><input matInput formControlName="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" /><mat-error>Enter an amount greater than zero.</mat-error></mat-form-field>
+      <mat-form-field appearance="outline"><mat-label>Currency</mat-label><mat-select formControlName="currency">@for (currency of currencies; track currency) { <mat-option [value]="currency">{{ currency }}</mat-option> }</mat-select></mat-form-field>
+    </div>
+    <mat-form-field appearance="outline"><mat-label>Date</mat-label><input matInput formControlName="date" type="date" /></mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>Notes <span class="optional">Optional</span></mat-label><textarea matInput formControlName="notes" rows="3" maxlength="500" placeholder="Add a note for your records"></textarea></mat-form-field>
+    @if (error(); as message) { <div class="form-error" role="alert"><mat-icon>error_outline</mat-icon>{{ message }}</div> }
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button mat-button type="button" mat-dialog-close [disabled]="saving()">Cancel</button><button mat-flat-button color="primary" type="submit" form="transaction-form" [disabled]="saving() || (form.controls.type.value !== 'Expense' && !store.people().length)"><mat-icon>{{ saving() ? 'sync' : 'check' }}</mat-icon>{{ saving() ? 'Saving' : 'Save transaction' }}</button></mat-dialog-actions>

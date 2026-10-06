@@ -1,0 +1,22 @@
+<section class="page-heading"><div><div class="eyebrow">PREFERENCES</div><h1>Settings</h1><p class="subtitle">Manage spreadsheet access and workspace appearance.</p></div></section>
+<section class="settings-grid">
+  <article class="settings-card connection-card">
+    <div class="card-icon"><mat-icon>table_chart</mat-icon></div>
+    <div class="card-title"><div><h2>Google Sheets</h2><p>Tracksee searches your Drive for spreadsheets that match its naming pattern.</p></div><span class="connection-state" [class.ready]="workspace.active()">{{ workspace.active() ? 'Selected' : 'Not connected' }}</span></div>
+    <div class="pattern-row"><span>Identification pattern</span><code>{{ namingPattern }}</code></div>
+    @if (!clientReady()) { <div class="config-warning" role="note"><mat-icon>info</mat-icon><span>Add your Google OAuth web client ID to <code>src/environments/environment.ts</code> to enable discovery and creation.</span></div> }
+    @if (workspace.active(); as active) { <div class="selected-sheet"><mat-icon>description</mat-icon><div><strong>{{ active.ledgerName }}</strong><span>{{ active.title }} · version {{ active.version }}</span></div></div> }
+    @if (workspace.available().length) {
+      <label class="selector-label" for="settings-sheet-selector">Available spreadsheets</label>
+      <select id="settings-sheet-selector" [value]="workspace.active()?.id ?? ''" (change)="selectSpreadsheet($any($event.target).value)">
+        <option value="">Choose a spreadsheet</option>
+        @for (spreadsheet of workspace.available(); track spreadsheet.id) { <option [value]="spreadsheet.id">{{ spreadsheet.ledgerName }} · v{{ spreadsheet.version }}</option> }
+      </select>
+    }
+    @if (message(); as text) { <div class="message" role="status"><mat-icon>{{ workspace.discoveryState() === 'error' || store.syncStatus() === 'error' ? 'error_outline' : 'info' }}</mat-icon>{{ text }}</div> }
+    <div class="connection-actions"><button class="sync-action" type="button" (click)="connectOrSync()" [disabled]="busy() || !clientReady()"><mat-icon>{{ busy() ? 'sync' : workspace.active() ? 'sync' : 'link' }}</mat-icon>{{ busy() ? 'Working…' : workspace.active() ? 'Sync selected' : 'Connect Google' }}</button><button class="new-sheet-action" type="button" (click)="createSpreadsheet()" [disabled]="busy() || !clientReady()"><mat-icon>add</mat-icon>New spreadsheet</button>@if (identity.accessToken()) { <button class="sign-out-action" type="button" (click)="signOut()">Sign out</button> }</div>
+    <div class="setup-note"><strong>One-time setup</strong><p>Set your OAuth web client ID in <code>src/environments/environment.ts</code>. Enable Google Sheets API and Google Drive API in the same Google Cloud project, and authorize your app origin. No spreadsheet ID is needed.</p></div>
+  </article>
+  <article class="settings-card theme-card"><div class="card-icon"><mat-icon>palette</mat-icon></div><h2>Appearance</h2><p>Pick a neutral palette for your workspace.</p><div class="theme-options" role="radiogroup" aria-label="Color theme">@for (theme of themes; track theme.id) { <button type="button" class="theme-option" role="radio" [attr.aria-checked]="themeService.theme() === theme.id" [class.selected]="themeService.theme() === theme.id" (click)="themeService.setTheme(theme.id)"><span class="theme-swatch" [attr.data-swatch]="theme.id"><i></i><i></i><i></i></span><span><strong>{{ theme.name }}</strong><small>{{ theme.description }}</small></span><mat-icon>{{ themeService.theme() === theme.id ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon></button> }</div></article>
+  <article class="settings-card privacy-card"><div class="card-icon"><mat-icon>shield</mat-icon></div><h2>Private by design</h2><p>Google access tokens are kept in this browser tab’s session storage and expire automatically. Sheets API requests go directly from your browser to Google; no Tracksee server receives your ledger.</p><div class="scope-note"><mat-icon>lock</mat-icon><span>Permissions used: spreadsheet access and Drive metadata search for names matching the Tracksee pattern.</span></div></article>
+</section>

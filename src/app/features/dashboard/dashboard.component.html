@@ -1,0 +1,54 @@
+<section class="page-heading">
+  <div><div class="eyebrow">YOUR MONEY, IN CONTEXT</div><h1>Overview</h1><p class="page-subtitle">A clear picture of your personal ledger.</p></div>
+  <button class="sync-button" type="button" [disabled]="syncing()" (click)="syncLedger()" aria-label="Connect or sync Google Sheets">
+    <mat-icon aria-hidden="true" [class.spin]="syncing()">{{ syncing() ? 'sync' : workspace.active() ? 'sync' : 'link' }}</mat-icon>{{ syncing() ? 'Syncing' : workspace.active() ? 'Sync ledger' : 'Connect Google' }}
+  </button>
+</section>
+
+@if (syncError(); as error) { <div class="error-banner" role="alert"><mat-icon aria-hidden="true">error_outline</mat-icon><div><strong>Couldn't sync your ledger</strong><span>{{ error }}</span><a routerLink="/settings">Review connection settings</a></div></div> }
+
+<section class="summary-section" aria-labelledby="currency-summary-title">
+  <div class="section-heading"><div><h2 id="currency-summary-title">Position by currency</h2><p>Balances stay separate. No currency conversion is applied.</p></div><span class="section-meta">{{ currencies.length }} currencies</span></div>
+  <div class="summary-grid">
+    @for (currency of currencies; track currency) {
+      <mat-card class="summary-card" appearance="outlined">
+        <div class="card-top"><span class="currency-badge">{{ currency }}</span><mat-icon aria-hidden="true">{{ store.globalCurrencySummary()[currency].netPosition >= 0 ? 'north_east' : 'south_west' }}</mat-icon></div>
+        <span class="metric-label">Net position</span>
+        <strong class="net-value" [class.positive]="store.globalCurrencySummary()[currency].netPosition > 0" [class.negative]="store.globalCurrencySummary()[currency].netPosition < 0">{{ formatMoney(store.globalCurrencySummary()[currency].netPosition, currency) }}</strong>
+        <div class="card-divider"></div>
+        <div class="mini-metrics"><div><span>Owed to you</span><strong class="positive">{{ formatMoney(store.globalCurrencySummary()[currency].totalReceivable, currency) }}</strong></div><div><span>You owe</span><strong class="negative">{{ formatMoney(store.globalCurrencySummary()[currency].totalPayable, currency) }}</strong></div></div>
+      </mat-card>
+    }
+  </div>
+</section>
+
+<div class="dashboard-columns">
+  <section class="panel" aria-labelledby="people-title">
+    <div class="section-heading panel-heading"><div><h2 id="people-title">People balances</h2><p>{{ store.peersWithPeople().length }} contacts with ledger activity</p></div><a class="text-link" routerLink="/people">View all <mat-icon>arrow_forward</mat-icon></a></div>
+    @if (store.peersWithPeople().length) {
+      <div class="people-list">
+        @for (entry of store.peersWithPeople(); track entry.entityId) {
+          <article class="person-row"><div class="person-avatar" aria-hidden="true">{{ (entry.person?.name ?? '?').slice(0, 1).toUpperCase() }}</div><div class="person-info"><strong>{{ entry.person?.name ?? 'Unknown person' }}</strong><span>{{ entry.person?.email || entry.person?.phone || 'Peer ledger' }}</span></div><div class="balance-stack">
+            @for (currency of currencies; track currency) { @if (entry.balances[currency] !== 0) { <span [class.positive]="entry.balances[currency] > 0" [class.negative]="entry.balances[currency] < 0">{{ currency }} {{ formatMoney(entry.balances[currency], currency) }}</span> } }
+            @if (entry.balances.CAD === 0 && entry.balances.INR === 0 && entry.balances.USD === 0) { <span class="settled">Settled</span> }
+          </div></article>
+        }
+      </div>
+    } @else {
+      <div class="empty-state"><div class="empty-icon"><mat-icon>groups</mat-icon></div><strong>No peer balances yet</strong><span>Once you record lending or borrowing, each person’s balance appears here.</span></div>
+    }
+  </section>
+
+  <section class="panel recent-panel" aria-labelledby="recent-title">
+    <div class="section-heading panel-heading"><div><h2 id="recent-title">Recent activity</h2><p>Your latest ledger entries</p></div><a class="text-link" routerLink="/transactions">All activity <mat-icon>arrow_forward</mat-icon></a></div>
+    @if (store.recentTransactions().length) {
+      <div class="activity-list">
+        @for (txn of store.recentTransactions(); track txn.txId) {
+          <article class="activity-row"><div class="activity-icon" [class.outgoing]="signedAmount(txn) < 0"><mat-icon aria-hidden="true">{{ txn.type === 'Expense' ? 'shopping_bag' : signedAmount(txn) >= 0 ? 'south_west' : 'north_east' }}</mat-icon></div><div class="activity-info"><strong>{{ transactionLabel(txn) }}</strong><span>{{ txn.date | date:'MMM d, y' }} <i>·</i> {{ txn.category || txn.type.replaceAll('_', ' ') }}</span></div><strong class="activity-amount" [class.negative]="signedAmount(txn) < 0">{{ signedAmount(txn) < 0 ? '−' : '+' }}{{ formatMoney(txn.amount, txn.currency) }}</strong></article>
+        }
+      </div>
+    } @else {
+      <div class="empty-state"><div class="empty-icon"><mat-icon>receipt_long</mat-icon></div><strong>Your ledger starts here</strong><span>Connect your Google Sheet and add your first transaction.</span></div>
+    }
+  </section>
+</div>
