@@ -12,6 +12,7 @@ import { TrackseeStore } from './core/store/tracksee.store';
 import { SpreadsheetWorkspaceService } from './core/services/spreadsheet-workspace.service';
 import { GoogleIdentityService } from './core/google/google-identity.service';
 import { ToastService } from './core/services/toast.service';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'ts-app-shell',
@@ -23,6 +24,7 @@ import { ToastService } from './core/services/toast.service';
 })
 export class AppComponent implements OnInit {
   readonly themeService = inject(ThemeService);
+  readonly appName = environment.appName;
   readonly store = inject(TrackseeStore);
   readonly workspace = inject(SpreadsheetWorkspaceService);
   readonly identity = inject(GoogleIdentityService);

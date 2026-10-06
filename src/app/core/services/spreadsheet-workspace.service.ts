@@ -95,9 +95,9 @@ export class SpreadsheetWorkspaceService {
 
   private async listFiles(token: string): Promise<DriveFile[]> {
     const prefix = this.patternPrefix();
-    const escapedPrefix = prefix.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    const legacyPrefix = '[tracksee]-';
-    const q = `mimeType = '${SPREADSHEET_MIME_TYPE}' and trashed = false and (name contains '${escapedPrefix}' or name contains '${legacyPrefix}')`;
+    const prefixes = [...new Set([prefix, '[sheetit]-', '[tracksee]-'])];
+    const nameFilters = prefixes.map((item) => `name contains '${item.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`).join(' or ');
+    const q = `mimeType = '${SPREADSHEET_MIME_TYPE}' and trashed = false and (${nameFilters})`;
     const files: DriveFile[] = [];
     let pageToken: string | undefined;
     do {
@@ -120,7 +120,7 @@ export class SpreadsheetWorkspaceService {
   }
 
   private parseName(title: string): Pick<TrackseeSpreadsheet, 'ledgerName' | 'version'> | null {
-    const patterns = [environment.spreadsheetNamingPattern, '[tracksee]-{name}-{version}'];
+    const patterns = [...new Set([environment.spreadsheetNamingPattern, '[sheetit]-{name}-{version}', '[tracksee]-{name}-{version}'])];
     for (const pattern of patterns) {
       const escaped = pattern
       .split(/(\{name\}|\{version\})/g)

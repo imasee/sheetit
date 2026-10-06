@@ -31,6 +31,9 @@ jobs:
         run: node scripts/inject-google-client-id.mjs
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          APP_NAME: ${{ vars.APP_NAME }}
+          SPREADSHEET_NAMING_PATTERN: ${{ vars.SPREADSHEET_NAMING_PATTERN }}
+          DEFAULT_SPREADSHEET_NAME: ${{ vars.DEFAULT_SPREADSHEET_NAME }}
       - name: Build Angular app for project Pages URL
         run: npm run build -- --configuration production --base-href /sheetit/
       - name: Add SPA fallback page

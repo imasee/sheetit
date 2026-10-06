@@ -1,11 +1,11 @@
 <main class="login-page">
   <section class="login-card" aria-labelledby="login-title">
-    <a class="brand" routerLink="/login" aria-label="Sheetit sign in"><span class="brand-mark"><mat-icon>account_balance_wallet</mat-icon></span><span>sheetit<span class="brand-dot">.</span></span></a>
+    <a class="brand" routerLink="/login" [attr.aria-label]="appName + ' sign in'"><span class="brand-mark"><mat-icon>account_balance_wallet</mat-icon></span><span>{{ appName.toLowerCase() }}<span class="brand-dot">.</span></span></a>
     <div class="login-copy"><div class="eyebrow">YOUR PERSONAL LEDGER</div><h1 id="login-title">A clearer view of<br />what you owe and own.</h1><p>Sign in to connect your Google Sheet and see every balance in the right currency.</p></div>
     @if (!identity.isConfigured()) { <div class="setup-message" role="status">Google sign-in needs a client ID. Add it to <code>src/environments/environment.ts</code> to enable this app.</div> }
     @if (error(); as message) { <div class="error-message" role="alert"><mat-icon>error_outline</mat-icon><span>{{ message }}</span></div> }
     <button class="google-sign-in" type="button" (click)="signIn()" [disabled]="busy() || !identity.isConfigured()"><span class="google-g" aria-hidden="true">G</span><span>{{ busy() ? 'Connecting to Google…' : 'Sign in with Google' }}</span><mat-icon>{{ busy() ? 'sync' : 'arrow_forward' }}</mat-icon></button>
-    <div class="privacy-note"><mat-icon>lock</mat-icon><span>Your data stays in your Google Sheet. Sheetit has no financial database.</span></div>
+    <div class="privacy-note"><mat-icon>lock</mat-icon><span>Your data stays in your Google Sheet. {{ appName }} has no financial database.</span></div>
     <div class="login-footer"><span>PERSONAL FINANCE, KEPT PRIVATE</span><span>CAD <i>·</i> INR <i>·</i> USD</span></div>
   </section>
   <aside class="login-aside" aria-label="Sheetit features"><div class="aside-orbit orbit-one"></div><div class="aside-orbit orbit-two"></div><div class="aside-content"><span class="aside-kicker">YOUR LEDGER, YOUR WAY</span><h2>One calm place<br />for all your balances.</h2><div class="currency-preview"><div><span>CAD</span><strong>Separate currencies.<br />Clear peer balances.</strong></div><mat-icon>north_east</mat-icon></div><div class="aside-foot"><span class="aside-line"></span><span>LOCAL FIRST · GOOGLE SHEETS POWERED</span></div></div></aside>

@@ -1,8 +1,8 @@
 <div class="app-shell">
   <aside class="sidebar" aria-label="Primary navigation">
-    <a class="brand" routerLink="/dashboard" aria-label="Sheetit home">
+    <a class="brand" routerLink="/dashboard" [attr.aria-label]="appName + ' home'">
       <span class="brand-mark"><mat-icon aria-hidden="true">account_balance_wallet</mat-icon></span>
-      <span class="brand-name">sheetit<span class="brand-period">.</span></span>
+      <span class="brand-name">{{ appName.toLowerCase() }}<span class="brand-period">.</span></span>
     </a>
 
     <div class="workspace-label">WORKSPACE</div>
@@ -49,7 +49,7 @@
           </button>
           @if (userMenuOpen()) {
             <div class="user-menu-panel" role="menu" aria-label="Account menu">
-              <div class="user-menu-identity"><strong>{{ identity.currentUser()?.name ?? 'Google account' }}</strong><span>{{ identity.currentUser()?.email ?? 'Signed in to Sheetit' }}</span></div>
+              <div class="user-menu-identity"><strong>{{ identity.currentUser()?.name ?? 'Google account' }}</strong><span>{{ identity.currentUser()?.email ?? 'Signed in to ' + appName }}</span></div>
               <button type="button" role="menuitem" class="user-menu-signout" (click)="signOut()"><mat-icon aria-hidden="true">logout</mat-icon>Sign out</button>
             </div>
           }

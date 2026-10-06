@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { GoogleIdentityService } from '../../core/google/google-identity.service';
+import { environment } from '../../../environments/environment';
 import { SpreadsheetWorkspaceService } from '../../core/services/spreadsheet-workspace.service';
 import { SpreadsheetDialogComponent } from '../spreadsheet-dialog/spreadsheet-dialog.component';
 
@@ -13,6 +14,7 @@ import { SpreadsheetDialogComponent } from '../spreadsheet-dialog/spreadsheet-di
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent {
+  readonly appName = environment.appName;
   readonly identity = inject(GoogleIdentityService);
   private readonly workspace = inject(SpreadsheetWorkspaceService);
   private readonly dialog = inject(MatDialog);
