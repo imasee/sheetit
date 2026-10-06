@@ -61,3 +61,4 @@ h1 { margin: 0; font: 700 28px Manrope, sans-serif; letter-spacing: -.7px; }
 .scope-note mat-icon { flex: none; color: var(--theme-positive); font-size: 15px; }
 @media (max-width: 850px) { .settings-grid { grid-template-columns: 1fr; } .privacy-card { grid-column: auto; } }
 @media (max-width: 580px) { h1 { font-size: 24px; } .settings-card { padding: 15px; } }
+.connection-card select.ts-control{min-height:42px;padding:9px 12px;border-color:var(--theme-border-strong);color:var(--text-primary);font-size:13px}

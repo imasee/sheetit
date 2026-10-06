@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Router } from '@angular/router';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
@@ -29,6 +29,8 @@ export class AppComponent implements OnInit {
   private readonly announcer = inject(LiveAnnouncer);
   readonly connectionBusy = signal(false);
   readonly connectionError = signal<string | null>(null);
+  readonly userMenuOpen = signal(false);
+  readonly userInitial = computed(() => (this.identity.currentUser()?.name ?? this.identity.currentUser()?.email ?? 'S').trim().slice(0, 1).toUpperCase());
   private readonly dialog = inject(MatDialog);
   readonly navItems = [
     { label: 'Overview', icon: 'space_dashboard', route: '/dashboard' },
@@ -38,6 +40,10 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.workspace.active() && this.store.syncStatus() === 'idle') void this.syncSelected();
+  }
+
+  toggleUserMenu(): void {
+    this.userMenuOpen.update((open) => !open);
   }
 
   openNewTransaction(): void {
@@ -65,7 +71,7 @@ export class AppComponent implements OnInit {
       }
       if (!this.workspace.active() && found.length === 1) this.workspace.select(found[0]);
       if (!this.workspace.active()) {
-        this.connectionError.set(`Found ${found.length} Tracksee spreadsheets. Select one above.`);
+        this.connectionError.set(`Found ${found.length} Sheetit spreadsheets. Select one above.`);
         return;
       }
       await this.syncSelected();
@@ -88,6 +94,7 @@ export class AppComponent implements OnInit {
   }
 
   async signOut(): Promise<void> {
+    this.userMenuOpen.set(false);
     this.identity.clearSession();
     this.store.resetLedger();
     this.connectionError.set('Google session cleared. Your selected spreadsheet is saved for next time.');

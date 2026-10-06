@@ -1,8 +1,8 @@
-/** Set the Google OAuth client ID for your own deployment. Spreadsheet selection is automatic. */
+/** Production settings. OAuth client ID should be configured for the deployment. */
 export const environment = {
-  production: false,
-  showLocalComments: true,
-  googleClientId: '575189646854-uosl4m60bvlv6r2pouos79lrg5obtr9h.apps.googleusercontent.com',
+  production: true,
+  showLocalComments: false,
+  googleClientId: 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com',
   spreadsheetNamingPattern: '[sheetit]-{name}-{version}',
   defaultSpreadsheetName: 'Personal Finance',
   scopes: [

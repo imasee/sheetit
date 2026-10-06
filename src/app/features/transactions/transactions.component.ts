@@ -5,10 +5,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { TransactionDialogComponent } from '../transaction-dialog/transaction-dialog.component';
 import { CURRENCIES, Currency, Transaction } from '../../core/models/tracksee.models';
 import { TrackseeStore } from '../../core/store/tracksee.store';
+import { environment } from '../../../environments/environment';
 
 @Component({ selector: 'ts-transactions', standalone: true, imports: [DatePipe, MatIconModule], templateUrl: './transactions.component.html', styleUrl: './transactions.component.scss', changeDetection: ChangeDetectionStrategy.OnPush })
 export class TransactionsComponent {
   readonly store = inject(TrackseeStore);
+  readonly showLocalComments = environment.showLocalComments;
   readonly currencies = CURRENCIES;
   readonly filter = signal<Currency | 'All'>('All');
   readonly rows = computed(() => {

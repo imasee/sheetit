@@ -1,5 +1,5 @@
 {
-  "name": "tracksee",
+  "name": "sheetit",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -26,6 +26,8 @@
     "@angular/build": "^21.0.0",
     "@angular/cli": "^21.0.0",
     "@angular/compiler-cli": "^21.0.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "tailwindcss": "^4.3.3",
     "typescript": "~5.9.2"
   }
 }

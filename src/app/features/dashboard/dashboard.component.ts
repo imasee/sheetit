@@ -56,7 +56,7 @@ export class DashboardComponent implements OnInit {
           this.workspace.select(found[0]);
           this.store.resetLedger();
         } else {
-          const message = `Found ${found.length} Tracksee spreadsheets. Select one from the spreadsheet card.`;
+          const message = `Found ${found.length} Sheetit spreadsheets. Select one from the spreadsheet card.`;
           this.syncError.set(message);
           await this.announcer.announce(message, 'assertive');
           return;

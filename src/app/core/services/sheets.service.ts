@@ -58,6 +58,26 @@ export class SheetsService {
     ));
   }
 
+  async appendPerson(person: Person): Promise<void> {
+    await firstValueFrom(this.http.post(
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent('People!A2:E')}:append`,
+      { values: [[person.entityId, person.name, person.phone, person.email, person.notes]] },
+      { headers: await this.headers(), params: { valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS' } },
+    ));
+  }
+
+  async updatePerson(person: Person): Promise<void> {
+    const rows = await this.getValues(PEOPLE_RANGE);
+    const rowIndex = rows.findIndex((row) => this.cell(row, 0) === person.entityId);
+    if (rowIndex < 0) throw new Error('This person is no longer in the selected People sheet. Sync and try again.');
+    const rowNumber = rowIndex + 2;
+    await firstValueFrom(this.http.put(
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(`People!A${rowNumber}:E${rowNumber}`)}`,
+      { values: [[person.entityId, person.name, person.phone, person.email, person.notes]] },
+      { headers: await this.headers(), params: { valueInputOption: 'RAW' } },
+    ));
+  }
+
   async ensureSchema(): Promise<void> {
     const current = await this.getValues('People!A1:E1').catch(() => []);
     const txnHeaders = await this.getValues('Transactions!A1:J1').catch(() => []);
@@ -86,7 +106,7 @@ export class SheetsService {
 
   private requireSpreadsheetId(): string {
     const spreadsheetId = this.workspace.active()?.id;
-    if (!spreadsheetId) throw new Error('Choose a Tracksee spreadsheet before syncing.');
+    if (!spreadsheetId) throw new Error('Choose a Sheetit spreadsheet before syncing.');
     return spreadsheetId;
   }
 
@@ -102,7 +122,7 @@ export class SheetsService {
       return;
     }
     if (expected.some((header, index) => rows[0]?.[index]?.trim() !== header)) {
-      throw new Error(`${range.split('!')[0]} has unexpected column headers. Use the Tracksee schema listed in Settings.`);
+      throw new Error(`${range.split('!')[0]} has unexpected column headers. Use the Sheetit schema listed in Settings.`);
     }
   }
   private isCurrency(value: string): value is Currency { return (CURRENCIES as readonly string[]).includes(value); }

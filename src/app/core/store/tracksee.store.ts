@@ -78,6 +78,29 @@ export const TrackseeStore = signalStore(
         throw error;
       }
     },
+    async addPerson(person: Person): Promise<void> {
+      patchState(store, { syncStatus: 'syncing', error: null });
+      try {
+        await sheets.appendPerson(person);
+        patchState(store, (state) => ({ people: [...state.people, person], syncStatus: 'ready' as const, error: null }));
+      } catch (error) {
+        patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to save this person.' });
+        throw error;
+      }
+    },
+    async updatePerson(person: Person): Promise<void> {
+      patchState(store, { syncStatus: 'syncing', error: null });
+      try {
+        await sheets.updatePerson(person);
+        patchState(store, (state) => ({
+          people: state.people.map((existing) => existing.entityId === person.entityId ? person : existing),
+          syncStatus: 'ready' as const, error: null,
+        }));
+      } catch (error) {
+        patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to update this person.' });
+        throw error;
+      }
+    },
     resetLedger(): void {
       patchState(store, { people: [], transactions: [], syncStatus: 'idle', error: null, lastSyncedAt: null });
     },

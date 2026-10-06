@@ -96,7 +96,8 @@ export class SpreadsheetWorkspaceService {
   private async listFiles(token: string): Promise<DriveFile[]> {
     const prefix = this.patternPrefix();
     const escapedPrefix = prefix.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    const q = `mimeType = '${SPREADSHEET_MIME_TYPE}' and trashed = false and name contains '${escapedPrefix}'`;
+    const legacyPrefix = '[tracksee]-';
+    const q = `mimeType = '${SPREADSHEET_MIME_TYPE}' and trashed = false and (name contains '${escapedPrefix}' or name contains '${legacyPrefix}')`;
     const files: DriveFile[] = [];
     let pageToken: string | undefined;
     do {
@@ -119,14 +120,18 @@ export class SpreadsheetWorkspaceService {
   }
 
   private parseName(title: string): Pick<TrackseeSpreadsheet, 'ledgerName' | 'version'> | null {
-    const escaped = environment.spreadsheetNamingPattern
+    const patterns = [environment.spreadsheetNamingPattern, '[tracksee]-{name}-{version}'];
+    for (const pattern of patterns) {
+      const escaped = pattern
       .split(/(\{name\}|\{version\})/g)
       .map((part) => part === '{name}' ? '(?<ledgerName>.+)' : part === '{version}' ? '(?<version>\\d+)' : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
       .join('');
-    const matches = new RegExp(`^${escaped}$`, 'i').exec(title);
-    const ledgerName = matches?.groups?.['ledgerName']?.trim();
-    const version = Number(matches?.groups?.['version']);
-    return ledgerName && Number.isSafeInteger(version) && version > 0 ? { ledgerName, version } : null;
+      const matches = new RegExp(`^${escaped}$`, 'i').exec(title);
+      const ledgerName = matches?.groups?.['ledgerName']?.trim();
+      const version = Number(matches?.groups?.['version']);
+      if (ledgerName && Number.isSafeInteger(version) && version > 0) return { ledgerName, version };
+    }
+    return null;
   }
 
   private formatName(name: string, version: number): string {
@@ -137,7 +142,7 @@ export class SpreadsheetWorkspaceService {
 
   private patternPrefix(): string {
     const nameToken = environment.spreadsheetNamingPattern.indexOf('{name}');
-    return nameToken >= 0 ? environment.spreadsheetNamingPattern.slice(0, nameToken) : '[tracksee]-';
+    return nameToken >= 0 ? environment.spreadsheetNamingPattern.slice(0, nameToken) : '[sheetit]-';
   }
 
   private authHeaders(token: string): HttpHeaders {

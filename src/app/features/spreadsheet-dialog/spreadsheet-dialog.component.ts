@@ -1,9 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { environment } from '../../../environments/environment';
 import { SpreadsheetWorkspaceService } from '../../core/services/spreadsheet-workspace.service';
@@ -13,7 +10,7 @@ export interface SpreadsheetDialogData { mode: 'offer' | 'new'; }
 
 @Component({
   selector: 'ts-spreadsheet-dialog', standalone: true,
-  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule],
+  imports: [ReactiveFormsModule, MatDialogModule, MatIconModule],
   templateUrl: './spreadsheet-dialog.component.html', styleUrl: './spreadsheet-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -1,2 +1,14 @@
-:host { display: block; }.dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; padding: 24px 24px 13px; }.dialog-heading h2 { margin: 3px 0 0; padding: 0; font: 700 20px Manrope, sans-serif; letter-spacing: -.4px; }.dialog-heading p { margin: 7px 0 0; color: var(--text-secondary); font-size: 12px; }.dialog-kicker { color: var(--text-muted); font-size: 9px; font-weight: 700; letter-spacing: 1.3px; }.dialog-heading button { margin: -8px -9px 0 0; color: var(--text-secondary); }mat-dialog-content { max-height: 70vh; padding: 0 24px 8px; }form { display: grid; gap: 3px; padding-top: 7px; }mat-form-field { width: 100%; }.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.optional { color: var(--text-muted); font-size: 10px; font-weight: 400; }.form-error { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 7px; color: var(--theme-negative); background: var(--theme-negative-soft); font-size: 11px; }.form-error mat-icon { font-size: 17px; width: 17px; height: 17px; }mat-dialog-actions { min-height: 65px; padding: 8px 24px 18px; border-top: 1px solid var(--theme-border); gap: 8px; }mat-dialog-actions button[mat-flat-button] { min-height: 38px; padding: 0 14px; border-radius: 7px; font-size: 11px; }mat-dialog-actions button mat-icon { width: 16px; height: 16px; margin-right: 4px; font-size: 16px; }
-@media (max-width: 480px) { .dialog-heading { padding: 20px 18px 11px; }mat-dialog-content { padding-inline: 18px; }.field-row { gap: 8px; }mat-dialog-actions { padding-inline: 18px; } }
+:host { display: block; }
+.dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 24px 24px 16px; }
+.dialog-heading h2 { margin: 4px 0 0; padding: 0; color: var(--text-primary); font: 700 21px Manrope, sans-serif; letter-spacing: -.4px; }
+.dialog-heading p { margin: 8px 0 0; color: var(--text-secondary); font-size: 13px; }
+.dialog-kicker { color: var(--text-secondary); font-size: 10px; font-weight: 700; letter-spacing: 1.2px; }
+.dialog-close { display: grid; flex: none; place-items: center; width: 40px; height: 40px; border: 1px solid var(--theme-border-strong); border-radius: 10px; color: var(--text-secondary); background: var(--theme-surface-raised); cursor: pointer; }
+.dialog-close:hover { color: var(--text-primary); background: var(--theme-surface-hover); }
+mat-dialog-content { max-height: 72vh; padding: 0 24px 20px; }
+.form-error { display: flex; align-items: flex-start; gap: 8px; padding: 12px; border: 1px solid var(--theme-negative-border); border-radius: 9px; color: var(--theme-negative); background: var(--theme-negative-soft); font-size: 12px; line-height: 1.45; }
+.form-error mat-icon { flex: none; width: 18px; height: 18px; font-size: 18px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px 22px; border-top: 1px solid var(--theme-border); }
+.dialog-actions mat-icon { width: 17px; height: 17px; font-size: 17px; }
+.person-mode-active { color: var(--text-primary) !important; background: var(--theme-surface) !important; box-shadow: 0 1px 3px var(--theme-border); }
+@media (max-width: 480px) { .dialog-heading { padding: 20px 18px 13px; } mat-dialog-content { padding-inline: 18px; } .dialog-actions { padding: 14px 18px 18px; } }
