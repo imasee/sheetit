@@ -5,10 +5,26 @@
 .dialog-kicker { color: var(--text-secondary); font-size: 10px; font-weight: 700; letter-spacing: 1.2px; }
 .dialog-close { display: grid; flex: none; place-items: center; width: 40px; height: 40px; border: 1px solid var(--theme-border-strong); border-radius: 10px; color: var(--text-secondary); background: var(--theme-surface-raised); cursor: pointer; }
 .dialog-close:hover { color: var(--text-primary); background: var(--theme-surface-hover); }
-mat-dialog-content { max-height: 72vh; padding: 0 24px 20px; }
+mat-dialog-content { display: block; max-height: 72vh; padding: 0 24px 20px; }
+.transaction-form { display: grid; gap: 18px; padding-top: 10px; }
+.transaction-form label { display: grid; gap: 8px; min-width: 0; color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+.field-label { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 5px; color: var(--text-primary); }
+.field-optional { color: var(--text-secondary); font-size: 12px; font-weight: 400; }
+.field-optional.required,.field-error { color: var(--theme-negative); font-size: 12px; font-weight: 500; }
+.person-section { display: grid; gap: 14px; padding: 16px; border: 1px solid var(--theme-border); border-radius: 12px; background: var(--theme-surface-raised); }
+.person-section-head { display: grid; justify-items: start; gap: 12px; }
+.person-contact-fields,.amount-currency-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.transaction-form textarea { resize: vertical; }
+.person-section-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.person-section-head h3 { margin: 0; color: var(--text-primary); font-size: 14px; font-weight: 700; }
+.person-section-head p { margin: 5px 0 0; color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+.person-mode-toggle { display: flex; gap: 3px; padding: 4px; border: 1px solid var(--theme-border-strong); border-radius: 10px; background: var(--theme-bg); }
+.person-mode-button { min-height: 36px; padding: 0 12px; border: 1px solid transparent; border-radius: 7px; color: var(--text-secondary); background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; }
+.person-mode-button[aria-pressed='true'] { border-color: var(--theme-border); color: var(--text-primary); background: var(--theme-surface); }
+.person-mode-button:disabled { color: var(--text-muted); }
 .form-error { display: flex; align-items: flex-start; gap: 8px; padding: 12px; border: 1px solid var(--theme-negative-border); border-radius: 9px; color: var(--theme-negative); background: var(--theme-negative-soft); font-size: 12px; line-height: 1.45; }
 .form-error mat-icon { flex: none; width: 18px; height: 18px; font-size: 18px; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px 22px; border-top: 1px solid var(--theme-border); }
 .dialog-actions mat-icon { width: 17px; height: 17px; font-size: 17px; }
 .person-mode-active { color: var(--text-primary) !important; background: var(--theme-surface) !important; box-shadow: 0 1px 3px var(--theme-border); }
-@media (max-width: 480px) { .dialog-heading { padding: 20px 18px 13px; } mat-dialog-content { padding-inline: 18px; } .dialog-actions { padding: 14px 18px 18px; } }
+@media (max-width: 480px) { .dialog-heading { padding: 20px 18px 13px; } mat-dialog-content { padding-inline: 18px; } .dialog-actions { padding: 14px 18px 18px; } .person-section { padding: 12px; } .person-contact-fields,.amount-currency-fields { grid-template-columns: minmax(0,1fr); } }

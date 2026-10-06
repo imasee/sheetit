@@ -97,7 +97,7 @@
   --button-text: #ffffff;
   --theme-positive: #357653;
   --theme-negative: #aa4948;
-  --theme-warning: #8f6d31;
+  --theme-warning: #74561f;
   --theme-positive-soft: #e8f2eb;
   --theme-negative-soft: #f8ebea;
   --theme-negative-border: #e6c6c3;
@@ -115,6 +115,7 @@
 }
 
 * { box-sizing: border-box; }
+mat-icon { display: inline-flex !important; align-items: center; justify-content: center; }
 html { min-width: 320px; min-height: 100%; scroll-behavior: smooth; }
 body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--text-primary); background: var(--theme-bg); font-family: 'DM Sans', sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font: inherit; }
@@ -132,6 +133,9 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 ::selection { color: var(--button-text); background: var(--theme-primary); }
 
 .mat-mdc-dialog-container { --mdc-dialog-container-color: var(--theme-surface); --mdc-dialog-subhead-color: var(--text-primary); }
+.mat-mdc-dialog-container label, .mat-mdc-dialog-container .form-label, .mat-mdc-dialog-container .mdc-floating-label, .mat-mdc-dialog-container h1, .mat-mdc-dialog-container h2, .mat-mdc-dialog-container h3 { color: var(--text-primary) !important; }
+.mat-mdc-dialog-container input, .mat-mdc-dialog-container textarea, .mat-mdc-dialog-container select { color: var(--text-primary); }
+.cdk-live-announcer-element, .cdk-visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
 .mat-mdc-select-panel, .mat-mdc-autocomplete-panel { --mat-option-label-text-color: var(--text-primary); --mat-option-hover-state-layer-color: var(--theme-surface-hover); --mat-option-focus-state-layer-color: var(--theme-surface-hover); background: var(--theme-surface-raised) !important; }
 .mat-mdc-form-field-hint, .mat-mdc-form-field-error { font-size: 10px; }
 .mat-mdc-unelevated-button.mat-primary { color: var(--button-text) !important; background-color: var(--theme-primary) !important; }

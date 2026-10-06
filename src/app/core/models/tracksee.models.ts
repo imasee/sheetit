@@ -10,6 +10,19 @@ export const TRANSACTION_TYPES = [
 ] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 export type TransactionStatus = 'Cleared' | 'Pending' | 'Void';
+export type PaymentDirection = 'Received' | 'Sent';
+
+export interface Payment {
+  paymentId: string;
+  txId: string;
+  date: string;
+  direction: PaymentDirection;
+  amount: number;
+  currency: Currency;
+  notes: string;
+  status: TransactionStatus;
+  createdAt: string;
+}
 
 export interface Person {
   entityId: string;
@@ -49,6 +62,7 @@ export type GlobalCurrencySummary = Record<Currency, CurrencySummary>;
 export interface LedgerSnapshot {
   people: Person[];
   transactions: Transaction[];
+  payments: Payment[];
 }
 
 export interface TrackseeSpreadsheet {

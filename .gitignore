@@ -1,6 +1,21 @@
-/node_modules
-/dist
-/.angular
-/coverage
-*.log
+# Dependencies and Angular build output
+/node_modules/
+/dist/
+/.angular/
+
+# Package-manager caches and logs
+/.npm-cache/
+/.npm/
+/npm-debug.log*
+/yarn-debug.log*
+/yarn-error.log*
+/pnpm-debug.log*
+
+# Local environment and editor files
+.env
+.env.*
+!.env.example
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/

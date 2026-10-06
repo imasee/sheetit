@@ -3,7 +3,14 @@
 .person-dialog-head h2 { margin: 4px 0 0; padding: 0; font: 700 21px Manrope, sans-serif; letter-spacing: -.4px; }
 .person-dialog-head p { margin: 8px 0 0; color: var(--text-secondary); font-size: 13px; }
 .person-dialog-kicker { color: var(--text-secondary); font-size: 10px; font-weight: 700; letter-spacing: 1.2px; }
+mat-dialog-content { display: block; max-height: 72vh; padding: 0 24px 20px; }
+.person-form { display: grid; gap: 18px; padding-top: 10px; }
+.person-form label { display: grid; gap: 8px; min-width: 0; color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+.field-label { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 5px; color: var(--text-primary); }
+.field-optional { color: var(--text-secondary); font-size: 12px; font-weight: 400; }
+.field-optional.required,.field-error { color: var(--theme-negative); font-size: 12px; font-weight: 500; }
+.person-contact-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
 .dialog-close { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--theme-border-strong); border-radius: 10px; color: var(--text-secondary); background: var(--theme-surface-raised); cursor: pointer; }
 .dialog-close:hover { color: var(--text-primary); background: var(--theme-surface-hover); }
 .person-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px 22px; border-top: 1px solid var(--theme-border); }
-@media (max-width: 480px) { .person-dialog-head { padding-inline: 18px; }.person-dialog-actions { padding-inline: 18px; } }
+@media (max-width: 480px) { .person-dialog-head { padding-inline: 18px; } mat-dialog-content { padding-inline: 18px; } .person-dialog-actions { padding-inline: 18px; } .person-contact-fields { grid-template-columns: minmax(0,1fr); } }

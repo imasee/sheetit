@@ -32,14 +32,7 @@
   <section class="panel" aria-labelledby="people-title">
     <div class="section-heading panel-heading"><div><h2 id="people-title">People balances</h2><p>{{ store.peersWithPeople().length }} contacts with ledger activity</p></div><a class="text-link" routerLink="/people">View all <mat-icon>arrow_forward</mat-icon></a></div>
     @if (store.peersWithPeople().length) {
-      <div class="people-list">
-        @for (entry of store.peersWithPeople(); track entry.entityId) {
-          <article class="person-row"><div class="person-avatar" aria-hidden="true">{{ (entry.person?.name ?? '?').slice(0, 1).toUpperCase() }}</div><div class="person-info"><strong>{{ entry.person?.name ?? 'Unknown person' }}</strong><span>{{ entry.person?.email || entry.person?.phone || 'Peer ledger' }}</span></div><div class="balance-stack">
-            @for (currency of currencies(); track currency) { @if (entry.balances[currency] !== 0) { <span [class.positive]="entry.balances[currency] > 0" [class.negative]="entry.balances[currency] < 0">{{ currency }} {{ formatMoney(entry.balances[currency], currency) }}</span> } }
-            @if (entry.balances.CAD === 0 && entry.balances.INR === 0 && entry.balances.USD === 0) { <span class="settled">Settled</span> }
-          </div></article>
-        }
-      </div>
+      <ts-peer-balance-table [entries]="store.peersWithPeople()" [transactions]="store.transactions()" [limit]="5" />
     } @else {
       <div class="empty-state"><div class="empty-icon"><mat-icon>groups</mat-icon></div><strong>No peer balances yet</strong><span>Once you record lending or borrowing, each person’s balance appears here.</span></div>
     }

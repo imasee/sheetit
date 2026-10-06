@@ -6,6 +6,7 @@
 .dialog-close:hover { color: var(--text-primary); background: var(--theme-surface-hover); }
 h2[mat-dialog-title] { margin: 14px 0 0; padding: 0 24px; color: var(--text-primary); font: 700 21px Manrope, sans-serif; letter-spacing: -.4px; }
 mat-dialog-content { padding: 0 24px 20px; }
+form label { display: grid; gap: 8px; color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
 .intro { margin: 9px 0 16px; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
 .form-error { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; padding: 11px 12px; border: 1px solid var(--theme-negative-border); border-radius: 9px; color: var(--theme-negative); background: var(--theme-negative-soft); font-size: 12px; line-height: 1.45; }
 .form-error mat-icon { flex: none; width: 18px; height: 18px; font-size: 18px; }

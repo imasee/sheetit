@@ -11,6 +11,7 @@ import { ThemeService } from './core/services/theme.service';
 import { TrackseeStore } from './core/store/tracksee.store';
 import { SpreadsheetWorkspaceService } from './core/services/spreadsheet-workspace.service';
 import { GoogleIdentityService } from './core/google/google-identity.service';
+import { ToastService } from './core/services/toast.service';
 
 @Component({
   selector: 'ts-app-shell',
@@ -27,6 +28,7 @@ export class AppComponent implements OnInit {
   readonly identity = inject(GoogleIdentityService);
   private readonly router = inject(Router);
   private readonly announcer = inject(LiveAnnouncer);
+  private readonly toast = inject(ToastService);
   readonly connectionBusy = signal(false);
   readonly connectionError = signal<string | null>(null);
   readonly userMenuOpen = signal(false);
@@ -77,6 +79,7 @@ export class AppComponent implements OnInit {
       await this.syncSelected();
     } catch (error) {
       this.connectionError.set(error instanceof Error ? error.message : 'Could not connect to Google Sheets.');
+      this.toast.show(this.connectionError()!, 'error');
     } finally {
       this.connectionBusy.set(false);
     }
@@ -108,9 +111,12 @@ export class AppComponent implements OnInit {
     this.store.resetLedger();
     try {
       await this.store.sync();
-      await this.announcer.announce(`Ledger sync complete. ${this.store.transactions().length} transactions and ${this.store.people().length} people loaded.`, 'polite');
+      const message = `Ledger sync complete. ${this.store.transactions().length} transactions and ${this.store.people().length} people loaded.`;
+      this.toast.show(message, 'success');
+      await this.announcer.announce(message, 'polite');
     } catch (error) {
       this.connectionError.set(error instanceof Error ? error.message : 'Could not sync this spreadsheet.');
+      this.toast.show(this.connectionError()!, 'error');
       await this.announcer.announce('Ledger sync failed. Check the spreadsheet connection in Settings.', 'assertive');
     } finally {
       this.connectionBusy.set(false);

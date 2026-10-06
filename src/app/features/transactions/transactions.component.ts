@@ -6,6 +6,7 @@ import { TransactionDialogComponent } from '../transaction-dialog/transaction-di
 import { CURRENCIES, Currency, Transaction } from '../../core/models/tracksee.models';
 import { TrackseeStore } from '../../core/store/tracksee.store';
 import { environment } from '../../../environments/environment';
+import { TransactionActionsDialogComponent } from '../transaction-actions-dialog/transaction-actions-dialog.component';
 
 @Component({ selector: 'ts-transactions', standalone: true, imports: [DatePipe, MatIconModule], templateUrl: './transactions.component.html', styleUrl: './transactions.component.scss', changeDetection: ChangeDetectionStrategy.OnPush })
 export class TransactionsComponent {
@@ -26,4 +27,6 @@ export class TransactionsComponent {
   }
   signedAmount(txn: Transaction): number { return txn.type === 'Borrowed_From_Them' || txn.type === 'Repayment_Received' || txn.type === 'Expense' ? -txn.amount : txn.amount; }
   openNew(): void { this.dialog.open(TransactionDialogComponent, { width: 'min(560px, calc(100vw - 32px))', maxWidth: '560px', autoFocus: 'first-tabbable', restoreFocus: true, ariaLabelledBy: 'transaction-dialog-title' }); }
+  openActions(txn: Transaction): void { this.dialog.open(TransactionActionsDialogComponent, { data: txn, width: 'min(560px, calc(100vw - 32px))', maxWidth: '560px', autoFocus: 'first-tabbable', restoreFocus: true, ariaLabelledBy: 'transaction-actions-title' }); }
+  paid(txn: Transaction): number { return this.store.payments().filter((payment) => payment.txId === txn.txId && payment.status === 'Cleared').reduce((total, payment) => total + payment.amount, 0); }
 }

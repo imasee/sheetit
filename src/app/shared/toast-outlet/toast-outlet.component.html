@@ -1,0 +1,7 @@
+@if (toast.current(); as notice) {
+  <div class="toast-message" [class.toast-error]="notice.kind === 'error'" [class.toast-success]="notice.kind === 'success'" role="group" aria-live="off" [attr.aria-label]="notice.kind === 'error' ? 'Sync error notification' : notice.kind === 'success' ? 'Sync success notification' : 'Notification'">
+    <mat-icon aria-hidden="true">{{ notice.kind === 'error' ? 'error_outline' : notice.kind === 'success' ? 'check_circle' : 'info' }}</mat-icon>
+    <span>{{ notice.text }}</span>
+    <button type="button" class="toast-close" aria-label="Dismiss notification" (click)="toast.dismiss()"><mat-icon aria-hidden="true">close</mat-icon></button>
+  </div>
+}

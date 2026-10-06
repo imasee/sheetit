@@ -1,0 +1,30 @@
+<div class="peer-table-wrap">
+  @if (visibleEntries().length) {
+    <table class="peer-table">
+      <caption class="sr-only">Peer balances summarized by person and currency</caption>
+      <thead><tr><th scope="col">Person</th>@for (currency of currencies; track currency) { <th scope="col">{{ currency }}</th> }<th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>
+        @for (entry of visibleEntries(); track entry.entityId) {
+          <tr class="peer-row">
+            <td><button class="peer-name-button" type="button" [attr.aria-expanded]="isExpanded(entry.entityId)" [attr.aria-controls]="'peer-details-' + entry.entityId" (click)="toggle(entry.entityId)"><mat-icon aria-hidden="true">{{ isExpanded(entry.entityId) ? 'expand_more' : 'chevron_right' }}</mat-icon><span>{{ entry.person?.name ?? 'Unknown person' }}</span></button><span class="peer-contact">{{ entry.person?.email || entry.person?.phone || 'Peer ledger' }}</span></td>
+            @for (currency of currencies; track currency) { <td class="peer-amount" [class.positive]="entry.balances[currency] > 0" [class.negative]="entry.balances[currency] < 0">{{ entry.balances[currency] ? formatMoney(entry.balances[currency], currency) : '—' }}</td> }
+            <td class="peer-actions">@if (allowEdit() && entry.person) { <button class="table-action" type="button" [attr.aria-label]="'Edit ' + entry.person.name" (click)="editPerson.emit(entry.person!)"><mat-icon aria-hidden="true">edit</mat-icon><span>Edit</span></button> }</td>
+          </tr>
+          @if (isExpanded(entry.entityId)) {
+            <tr class="detail-row"><td [attr.colspan]="currencies.length + 2"><div class="peer-details" [id]="'peer-details-' + entry.entityId">
+              <section class="detail-contact"><h3>Contact</h3><div><span>Email</span><strong>{{ entry.person?.email || 'Not provided' }}</strong></div><div><span>Phone</span><strong>{{ entry.person?.phone || 'Not provided' }}</strong></div>@if (showLocalComments && entry.person?.notes) { <p>{{ entry.person?.notes }}</p> }</section>
+              <section class="detail-history"><h3>Recent peer activity</h3>
+                @if (transactionsByPerson().get(entry.entityId); as activity) {
+                  @if (activity.length) { <ul>@for (txn of activity.slice(0, 5); track txn.txId) { <li><span>{{ txn.date | date:'MMM d, y' }} · {{ txn.type.replaceAll('_', ' ') }}</span><strong [class.positive]="txn.type === 'Lent_To_Them' || txn.type === 'Repayment_Sent'" [class.negative]="txn.type === 'Borrowed_From_Them' || txn.type === 'Repayment_Received'">{{ formatMoney(txn.amount, txn.currency) }}</strong></li> }</ul> }
+                  @else { <p>No peer transactions recorded.</p> }
+                } @else { <p>No peer transactions recorded.</p> }
+              </section>
+            </div></td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  } @else {
+    <div class="peer-empty"><mat-icon>group</mat-icon><span>No people to show yet.</span></div>
+  }
+</div>

@@ -3,13 +3,15 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { GoogleIdentityService } from '../google/google-identity.service';
 import { SpreadsheetWorkspaceService } from './spreadsheet-workspace.service';
-import { CURRENCIES, Currency, Person, Transaction, TRANSACTION_TYPES, TransactionStatus } from '../models/tracksee.models';
+import { CURRENCIES, Currency, Payment, PaymentDirection, Person, Transaction, TRANSACTION_TYPES, TransactionStatus } from '../models/tracksee.models';
 
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
 const PEOPLE_RANGE = 'People!A2:E';
 const TRANSACTIONS_RANGE = 'Transactions!A2:J';
+const PAYMENTS_RANGE = 'Payments!A2:I';
 const PEOPLE_HEADERS = ['EntityId', 'Name', 'Phone', 'Email', 'Notes'];
 const TRANSACTION_HEADERS = ['TxId', 'Date', 'EntityId', 'Type', 'Amount', 'Currency', 'Category', 'Notes', 'Status', 'CreatedAt'];
+const PAYMENT_HEADERS = ['PaymentId', 'TxId', 'Date', 'Direction', 'Amount', 'Currency', 'Notes', 'Status', 'CreatedAt'];
 
 @Injectable({ providedIn: 'root' })
 export class SheetsService {
@@ -48,6 +50,20 @@ export class SheetsService {
     });
   }
 
+  async fetchPayments(): Promise<Payment[]> {
+    const rows = await this.getValues(PAYMENTS_RANGE);
+    return rows.map((row, index) => {
+      const amount = Number(this.cell(row, 4));
+      const currency = this.cell(row, 5);
+      const direction = this.cell(row, 3);
+      const status = this.cell(row, 7);
+      if (!this.cell(row, 0) || !this.cell(row, 1) || !this.cell(row, 2) || !['Received', 'Sent'].includes(direction) || !this.isCurrency(currency) || !Number.isFinite(amount) || amount <= 0 || !this.isStatus(status)) {
+        throw new Error(`Payments row ${index + 2} has invalid payment data.`);
+      }
+      return { paymentId: this.cell(row, 0), txId: this.cell(row, 1), date: this.cell(row, 2), direction: direction as PaymentDirection, amount, currency, notes: this.cell(row, 6), status, createdAt: this.cell(row, 8) };
+    });
+  }
+
   async appendTransaction(txn: Transaction): Promise<void> {
     const row = [[txn.txId, txn.date, txn.entityId, txn.type, txn.amount, txn.currency,
       txn.category, txn.notes, txn.status, txn.createdAt]];
@@ -55,6 +71,25 @@ export class SheetsService {
       `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(TRANSACTIONS_RANGE)}:append`,
       { values: row },
       { headers: await this.headers(), params: { valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS' } },
+    ));
+  }
+
+  async appendPayment(payment: Payment): Promise<void> {
+    await firstValueFrom(this.http.post(
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(PAYMENTS_RANGE)}:append`,
+      { values: [[payment.paymentId, payment.txId, payment.date, payment.direction, payment.amount, payment.currency, payment.notes, payment.status, payment.createdAt]] },
+      { headers: await this.headers(), params: { valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS' } },
+    ));
+  }
+
+  async updateTransactionStatus(txId: string, status: TransactionStatus): Promise<void> {
+    const rows = await this.getValues(TRANSACTIONS_RANGE);
+    const rowIndex = rows.findIndex((row) => this.cell(row, 0) === txId);
+    if (rowIndex < 0) throw new Error('This transaction is no longer in the selected sheet. Sync and try again.');
+    const rowNumber = rowIndex + 2;
+    await firstValueFrom(this.http.put(
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(`Transactions!I${rowNumber}:I${rowNumber}`)}`,
+      { values: [[status]] }, { headers: await this.headers(), params: { valueInputOption: 'RAW' } },
     ));
   }
 
@@ -79,11 +114,19 @@ export class SheetsService {
   }
 
   async ensureSchema(): Promise<void> {
+    const id = this.requireSpreadsheetId();
+    const tokenHeaders = await this.headers();
+    const metadata = await firstValueFrom(this.http.get<{ sheets?: { properties?: { title?: string } }[] }>(`${SHEETS_API}/${id}`, { headers: tokenHeaders, params: { fields: 'sheets.properties.title' } }));
+    if (!(metadata.sheets ?? []).some((sheet) => sheet.properties?.title === 'Payments')) {
+      await firstValueFrom(this.http.post(`${SHEETS_API}/${id}:batchUpdate`, { requests: [{ addSheet: { properties: { title: 'Payments', gridProperties: { frozenRowCount: 1 } } } }] }, { headers: tokenHeaders }));
+    }
     const current = await this.getValues('People!A1:E1').catch(() => []);
     const txnHeaders = await this.getValues('Transactions!A1:J1').catch(() => []);
+    const paymentHeaders = await this.getValues('Payments!A1:I1').catch(() => []);
     const requests: { range: string; values: string[][] }[] = [];
     this.addHeaderRequest(current, 'People!A1:E1', PEOPLE_HEADERS, requests);
     this.addHeaderRequest(txnHeaders, 'Transactions!A1:J1', TRANSACTION_HEADERS, requests);
+    this.addHeaderRequest(paymentHeaders, 'Payments!A1:I1', PAYMENT_HEADERS, requests);
     if (requests.length) {
       await firstValueFrom(this.http.post(`${SHEETS_API}/${this.requireSpreadsheetId()}/values:batchUpdate`, {
         valueInputOption: 'RAW', data: requests,

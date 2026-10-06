@@ -1,6 +1,6 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
-import { Currency, CURRENCIES, GlobalCurrencySummary, LedgerSnapshot, Person, PeerPosition, SyncStatus, Transaction } from '../models/tracksee.models';
+import { Currency, CURRENCIES, GlobalCurrencySummary, LedgerSnapshot, Payment, Person, PeerPosition, SyncStatus, Transaction, TransactionStatus } from '../models/tracksee.models';
 import { SheetsService } from '../services/sheets.service';
 
 interface TrackseeState extends LedgerSnapshot {
@@ -18,8 +18,8 @@ const emptySummary = (): GlobalCurrencySummary => ({
 
 export const TrackseeStore = signalStore(
   { providedIn: 'root' },
-  withState<TrackseeState>({ people: [], transactions: [], syncStatus: 'idle', error: null, lastSyncedAt: null }),
-  withComputed(({ people, transactions }) => {
+  withState<TrackseeState>({ people: [], transactions: [], payments: [], syncStatus: 'idle', error: null, lastSyncedAt: null }),
+  withComputed(({ people, transactions, payments }) => {
     const peerBalances = computed<PeerPosition[]>(() => {
       const positions = new Map<string, Record<Currency, number>>();
       for (const txn of transactions()) {
@@ -27,6 +27,15 @@ export const TrackseeStore = signalStore(
         const balances = positions.get(txn.entityId) ?? emptyBalances();
         const direction = txn.type === 'Lent_To_Them' || txn.type === 'Repayment_Sent' ? 1 : -1;
         balances[txn.currency] += direction * txn.amount;
+        positions.set(txn.entityId, balances);
+      }
+      const txById = new Map(transactions().map((txn) => [txn.txId, txn]));
+      for (const payment of payments()) {
+        if (payment.status !== 'Cleared') continue;
+        const txn = txById.get(payment.txId);
+        if (!txn || txn.status !== 'Cleared' || txn.type === 'Expense') continue;
+        const balances = positions.get(txn.entityId) ?? emptyBalances();
+        balances[payment.currency] += payment.direction === 'Received' ? -payment.amount : payment.amount;
         positions.set(txn.entityId, balances);
       }
       return Array.from(positions, ([entityId, balances]) => ({ entityId, balances }));
@@ -58,8 +67,8 @@ export const TrackseeStore = signalStore(
       patchState(store, { syncStatus: 'syncing', error: null });
       try {
         await sheets.ensureSchema();
-        const [people, transactions] = await Promise.all([sheets.fetchPeople(), sheets.fetchTransactions()]);
-        patchState(store, { people, transactions, syncStatus: 'ready', error: null, lastSyncedAt: new Date().toISOString() });
+        const [people, transactions, payments] = await Promise.all([sheets.fetchPeople(), sheets.fetchTransactions(), sheets.fetchPayments()]);
+        patchState(store, { people, transactions, payments, syncStatus: 'ready', error: null, lastSyncedAt: new Date().toISOString() });
       } catch (error) {
         patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to sync the ledger.' });
         throw error;
@@ -77,6 +86,26 @@ export const TrackseeStore = signalStore(
         patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to save the transaction.' });
         throw error;
       }
+    },
+    async addPayment(payment: Payment): Promise<void> {
+      const transaction = store.transactions().find((item) => item.txId === payment.txId);
+      if (!transaction || transaction.type === 'Expense') throw new Error('Payments can only be linked to a peer transaction.');
+      const expectedDirection = transaction.type === 'Lent_To_Them' ? 'Received' : 'Sent';
+      if (payment.direction !== expectedDirection || payment.currency !== transaction.currency) throw new Error('Payment direction and currency must match the selected transaction.');
+      const allocated = store.payments().filter((item) => item.txId === payment.txId && item.status === 'Cleared').reduce((total, item) => total + item.amount, 0);
+      if (payment.amount > Math.max(0, transaction.amount - allocated)) throw new Error('Payment exceeds the transaction’s remaining balance.');
+      patchState(store, { syncStatus: 'syncing', error: null });
+      try {
+        await sheets.appendPayment(payment);
+        patchState(store, (state) => ({ payments: [...state.payments, payment], syncStatus: 'ready' as const, error: null, lastSyncedAt: new Date().toISOString() }));
+      } catch (error) {
+        patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to save this payment.' });
+        throw error;
+      }
+    },
+    async setTransactionStatus(txId: string, status: TransactionStatus): Promise<void> {
+      await sheets.updateTransactionStatus(txId, status);
+      patchState(store, (state) => ({ transactions: state.transactions.map((item) => item.txId === txId ? { ...item, status } : item), lastSyncedAt: new Date().toISOString() }));
     },
     async addPerson(person: Person): Promise<void> {
       patchState(store, { syncStatus: 'syncing', error: null });
@@ -102,7 +131,7 @@ export const TrackseeStore = signalStore(
       }
     },
     resetLedger(): void {
-      patchState(store, { people: [], transactions: [], syncStatus: 'idle', error: null, lastSyncedAt: null });
+      patchState(store, { people: [], transactions: [], payments: [], syncStatus: 'idle', error: null, lastSyncedAt: null });
     },
     getPerson(entityId: string): Person | undefined { return store.people().find((person) => person.entityId === entityId); },
   })),

@@ -1,0 +1,61 @@
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { LiveAnnouncer } from '@angular/cdk/a11y';
+import { Payment, Transaction, TransactionStatus } from '../../core/models/tracksee.models';
+import { ToastService } from '../../core/services/toast.service';
+import { TrackseeStore } from '../../core/store/tracksee.store';
+
+@Component({ selector: 'ts-transaction-actions-dialog', standalone: true, imports: [DecimalPipe, ReactiveFormsModule, MatDialogModule, MatIconModule], templateUrl: './transaction-actions-dialog.component.html', styleUrl: './transaction-actions-dialog.component.scss', changeDetection: ChangeDetectionStrategy.OnPush })
+export class TransactionActionsDialogComponent {
+  readonly transaction = inject<Transaction>(MAT_DIALOG_DATA);
+  private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly store = inject(TrackseeStore);
+  private readonly dialogRef = inject(MatDialogRef<TransactionActionsDialogComponent>);
+  private readonly announcer = inject(LiveAnnouncer);
+  private readonly toast = inject(ToastService);
+  readonly saving = signal(false);
+  readonly error = signal('');
+  readonly statuses: TransactionStatus[] = ['Cleared', 'Pending', 'Void'];
+  readonly statusForm = this.fb.group({ status: this.fb.control<TransactionStatus>(this.transaction.status, Validators.required) });
+  readonly paymentForm = this.fb.group({ amount: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]), date: this.fb.control(new Date().toISOString().slice(0, 10), Validators.required), notes: this.fb.control('') });
+  readonly paymentDirection = this.transaction.type === 'Lent_To_Them' ? 'Received' : 'Sent';
+  readonly paid = this.store.payments().filter((payment) => payment.txId === this.transaction.txId && payment.status === 'Cleared').reduce((total, payment) => total + payment.amount, 0);
+  readonly remaining = Math.max(0, this.transaction.amount - this.paid);
+  readonly canRecordPayment = ['Lent_To_Them', 'Borrowed_From_Them'].includes(this.transaction.type) && this.transaction.status !== 'Void' && this.remaining > 0;
+  readonly paymentHistory = this.store.payments().filter((payment) => payment.txId === this.transaction.txId).sort((a, b) => b.date.localeCompare(a.date));
+
+  formatAmount(amount: number): string { return new Intl.NumberFormat(undefined, { style: 'currency', currency: this.transaction.currency }).format(amount); }
+
+  async saveStatus(): Promise<void> {
+    if (this.statusForm.invalid || this.saving()) return;
+    const status = this.statusForm.controls.status.value;
+    if (status === 'Void' && !window.confirm('Void this transaction? It will remain in the ledger for audit history, and its linked payments will no longer affect balances.')) return;
+    this.saving.set(true); this.error.set('');
+    try {
+      await this.store.setTransactionStatus(this.transaction.txId, status);
+      this.toast.show(`Transaction status changed to ${status.toLowerCase()}.`, 'success');
+      await this.announcer.announce(`Transaction status changed to ${status.toLowerCase()}.`, 'polite');
+      this.dialogRef.close(true);
+    } catch (error) { this.error.set(error instanceof Error ? error.message : 'Could not update the transaction.'); }
+    finally { this.saving.set(false); }
+  }
+
+  async addPayment(): Promise<void> {
+    this.paymentForm.markAllAsTouched();
+    if (this.paymentForm.invalid || this.saving()) return;
+    const { amount, date, notes } = this.paymentForm.getRawValue();
+    if (!amount || amount > this.remaining) { this.error.set(`Enter an amount up to ${this.formatAmount(this.remaining)}.`); return; }
+    const payment: Payment = { paymentId: crypto.randomUUID(), txId: this.transaction.txId, date, direction: this.paymentDirection, amount, currency: this.transaction.currency, notes: notes.trim(), status: 'Cleared', createdAt: new Date().toISOString() };
+    this.saving.set(true); this.error.set('');
+    try {
+      await this.store.addPayment(payment);
+      this.toast.show('Payment recorded and linked to this transaction.', 'success');
+      await this.announcer.announce('Payment recorded.', 'polite');
+      this.dialogRef.close(true);
+    } catch (error) { this.error.set(error instanceof Error ? error.message : 'Could not record this payment.'); }
+    finally { this.saving.set(false); }
+  }
+}

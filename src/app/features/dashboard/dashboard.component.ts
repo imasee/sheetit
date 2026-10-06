@@ -10,10 +10,12 @@ import { TrackseeStore } from '../../core/store/tracksee.store';
 import { SpreadsheetWorkspaceService } from '../../core/services/spreadsheet-workspace.service';
 import { SpreadsheetDialogComponent } from '../spreadsheet-dialog/spreadsheet-dialog.component';
 import { CURRENCIES, Currency, Transaction } from '../../core/models/tracksee.models';
+import { PeerBalanceTableComponent } from '../../shared/peer-balance-table/peer-balance-table.component';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'ts-dashboard', standalone: true,
-  imports: [MatCardModule, MatIconModule, DatePipe, RouterLink],
+  imports: [MatCardModule, MatIconModule, DatePipe, RouterLink, PeerBalanceTableComponent],
   templateUrl: './dashboard.component.html', styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -27,6 +29,7 @@ export class DashboardComponent implements OnInit {
   readonly syncing = signal(false);
   readonly syncError = signal<string | null>(null);
   private readonly announcer = inject(LiveAnnouncer);
+  private readonly toast = inject(ToastService);
   private readonly dialog = inject(MatDialog);
 
   ngOnInit(): void {
@@ -63,9 +66,12 @@ export class DashboardComponent implements OnInit {
         }
       }
       await this.store.sync();
-      await this.announcer.announce(`Ledger sync complete. ${this.store.transactions().length} transactions and ${this.store.people().length} people loaded.`, 'polite');
+      const message = `Ledger sync complete. ${this.store.transactions().length} transactions and ${this.store.people().length} people loaded.`;
+      this.toast.show(message, 'success');
+      await this.announcer.announce(message, 'polite');
     } catch (error) {
       this.syncError.set(error instanceof Error ? error.message : 'Ledger sync failed.');
+      this.toast.show(this.syncError()!, 'error');
       await this.announcer.announce('Ledger sync failed. Check the connection details in Settings.', 'assertive');
     } finally {
       this.syncing.set(false);

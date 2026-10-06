@@ -44,15 +44,14 @@ export class SpreadsheetWorkspaceService {
       const matches = files.flatMap((file) => {
         const parsed = this.parseName(file.name);
         return file.id && parsed ? [{ id: file.id, title: file.name, ...parsed }] : [];
-      }).sort((a, b) => a.ledgerName.localeCompare(b.ledgerName) || b.version - a.version);
+      }).sort((a, b) => b.version - a.version || a.ledgerName.localeCompare(b.ledgerName));
 
       this.available.set(matches);
       const selected = this.active();
       if (selected) {
         const latest = matches.find((item) => item.id === selected.id);
-        if (latest) this.setActive(latest);
-        else this.setActive(null);
-      }
+        this.setActive(latest ?? matches[0] ?? null);
+      } else this.setActive(matches[0] ?? null);
       this.discoveryState.set('ready');
       return matches;
     } catch (error) {
@@ -83,6 +82,7 @@ export class SpreadsheetWorkspaceService {
         sheets: [
           { properties: { title: 'People', gridProperties: { frozenRowCount: 1 } } },
           { properties: { title: 'Transactions', gridProperties: { frozenRowCount: 1 } } },
+          { properties: { title: 'Payments', gridProperties: { frozenRowCount: 1 } } },
         ],
       },
       { headers: this.authHeaders(token) },

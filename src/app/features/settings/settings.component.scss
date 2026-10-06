@@ -33,7 +33,7 @@ h1 { margin: 0; font: 700 28px Manrope, sans-serif; letter-spacing: -.7px; }
 .setup-note strong { font-size: 9px; }
 .setup-note p { margin: 5px 0 0; color: var(--text-secondary); font-size: 9px; line-height: 1.55; }
 .setup-note code { color: var(--theme-primary); }
-.connection-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.connection-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .sync-action { display: flex; align-items: center; gap: 7px; height: 35px; padding: 0 11px; border: 0; border-radius: 7px; color: var(--button-text); background: var(--theme-primary); font: 700 10px 'DM Sans', sans-serif; cursor: pointer; }
 .sync-action:disabled { opacity: .6; }
 .sync-action mat-icon { font-size: 16px; }
