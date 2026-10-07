@@ -5,10 +5,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { CURRENCIES, Currency, Person, Transaction, TransactionType } from '../../core/models/tracksee.models';
 import { TrackseeStore } from '../../core/store/tracksee.store';
 import { environment } from '../../../environments/environment';
+import { ThousandsSeparatorDirective } from '../../shared/directives/thousands-separator.directive';
+import { DateFieldComponent } from '../../shared/date-field/date-field.component';
 
 @Component({
   selector: 'ts-transaction-dialog', standalone: true,
-  imports: [ReactiveFormsModule, MatDialogModule, MatIconModule],
+  imports: [ReactiveFormsModule, MatDialogModule, MatIconModule, ThousandsSeparatorDirective, DateFieldComponent],
   templateUrl: './transaction-dialog.component.html', styleUrl: './transaction-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -19,6 +21,11 @@ export class TransactionDialogComponent {
   readonly showLocalComments = environment.showLocalComments;
   readonly currencies = CURRENCIES;
   readonly types: TransactionType[] = ['Expense', 'Lent_To_Them', 'Borrowed_From_Them'];
+  readonly typeOptions: { value: TransactionType; label: string; description: string; icon: string }[] = [
+    { value: 'Expense', label: 'Expense', description: 'Money you spent', icon: 'receipt_long' },
+    { value: 'Lent_To_Them', label: 'Lent to them', description: 'You paid; they owe you', icon: 'south_west' },
+    { value: 'Borrowed_From_Them', label: 'Borrowed', description: 'They paid; you owe them', icon: 'north_east' },
+  ];
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
   readonly personMode = signal<'existing' | 'new'>(this.store.people().some((person) => person.status === 'Active') ? 'existing' : 'new');

@@ -7,8 +7,10 @@ import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { Payment, Transaction, TransactionStatus } from '../../core/models/tracksee.models';
 import { ToastService } from '../../core/services/toast.service';
 import { TrackseeStore } from '../../core/store/tracksee.store';
+import { ThousandsSeparatorDirective } from '../../shared/directives/thousands-separator.directive';
+import { DateFieldComponent } from '../../shared/date-field/date-field.component';
 
-@Component({ selector: 'ts-transaction-actions-dialog', standalone: true, imports: [DecimalPipe, ReactiveFormsModule, MatDialogModule, MatIconModule], templateUrl: './transaction-actions-dialog.component.html', styleUrl: './transaction-actions-dialog.component.scss', changeDetection: ChangeDetectionStrategy.OnPush })
+@Component({ selector: 'ts-transaction-actions-dialog', standalone: true, imports: [DecimalPipe, ReactiveFormsModule, MatDialogModule, MatIconModule, ThousandsSeparatorDirective, DateFieldComponent], templateUrl: './transaction-actions-dialog.component.html', styleUrl: './transaction-actions-dialog.component.scss', changeDetection: ChangeDetectionStrategy.OnPush })
 export class TransactionActionsDialogComponent {
   readonly transaction = inject<Transaction>(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder).nonNullable;

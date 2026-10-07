@@ -1,0 +1,4 @@
+:host { display: block; min-width: 0; }
+.date-field { position: relative; }
+.date-field input { width: 100%; padding-right: 52px; cursor: pointer; }
+.date-field mat-datepicker-toggle { position: absolute; top: 50%; right: 3px; transform: translateY(-50%); color: var(--text-secondary); }

@@ -1,0 +1,6 @@
+<div class="date-field">
+  <input matInput [id]="inputId()" [matDatepicker]="picker" [value]="dateValue" [disabled]="disabled"
+    [attr.aria-label]="label()" placeholder="Choose a date" (dateChange)="dateChanged($event.value)" (blur)="touched()" />
+  <mat-datepicker-toggle [for]="picker" [disabled]="disabled" [attr.aria-label]="'Open ' + label() + ' calendar'"></mat-datepicker-toggle>
+  <mat-datepicker #picker></mat-datepicker>
+</div>
