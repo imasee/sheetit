@@ -33,6 +33,16 @@ export class AppComponent implements OnInit {
   private readonly toast = inject(ToastService);
   readonly connectionBusy = signal(false);
   readonly connectionError = signal<string | null>(null);
+  readonly appBusy = computed(() =>
+    this.connectionBusy() ||
+    this.workspace.discoveryState() === 'loading' ||
+    this.store.syncStatus() === 'syncing',
+  );
+  readonly appBusyMessage = computed(() => {
+    if (this.workspace.discoveryState() === 'loading') return 'Looking for your spreadsheets…';
+    if (this.store.syncStatus() === 'syncing') return 'Syncing your ledger…';
+    return 'Connecting to Google Sheets…';
+  });
   readonly userMenuOpen = signal(false);
   readonly userInitial = computed(() => (this.identity.currentUser()?.name ?? this.identity.currentUser()?.email ?? 'S').trim().slice(0, 1).toUpperCase());
   private readonly dialog = inject(MatDialog);

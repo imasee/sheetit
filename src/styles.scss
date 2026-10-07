@@ -140,6 +140,14 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .mat-mdc-form-field-hint, .mat-mdc-form-field-error { font-size: 10px; }
 .mat-mdc-unelevated-button.mat-primary { color: var(--button-text) !important; background-color: var(--theme-primary) !important; }
 
+.app-loading-overlay { position: fixed; z-index: 900; inset: 0; display: grid; place-items: center; padding: 20px; background: color-mix(in srgb, var(--theme-bg) 68%, transparent); backdrop-filter: blur(2px); }
+.app-loading-panel { display: grid; justify-items: center; gap: 12px; width: min(340px, 100%); padding: 25px 22px; border: 1px solid var(--theme-border-strong); border-radius: 14px; color: var(--text-primary); background: var(--theme-surface); box-shadow: var(--shadow-floating); text-align: center; }
+.app-loading-panel strong { font-size: 15px; line-height: 1.4; }
+.app-loading-detail { color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+.app-loading-spinner { width: 34px; height: 34px; border: 3px solid var(--theme-border-strong); border-top-color: var(--theme-primary); border-radius: 50%; animation: app-loading-spin .8s linear infinite; }
+@keyframes app-loading-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .app-loading-spinner { animation: none; border-color: var(--theme-primary); border-right-color: var(--theme-border-strong); } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
