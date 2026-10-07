@@ -135,9 +135,25 @@ export class GoogleIdentityService {
 
   private readToken(): string | null {
     try {
-      const token = sessionStorage.getItem(TOKEN_KEY);
-      const expiry = Number(sessionStorage.getItem(TOKEN_EXPIRY_KEY));
-      return token && expiry > Date.now() + 60_000 ? token : null;
+      const savedToken = localStorage.getItem(TOKEN_KEY);
+      const savedExpiry = Number(localStorage.getItem(TOKEN_EXPIRY_KEY));
+      if (savedToken && savedExpiry > Date.now() + 60_000) {
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
+        return savedToken;
+      }
+
+      // Migrate a still-valid tab-scoped session from earlier app versions.
+      const legacyToken = sessionStorage.getItem(TOKEN_KEY);
+      const legacyExpiry = Number(sessionStorage.getItem(TOKEN_EXPIRY_KEY));
+      if (legacyToken && legacyExpiry > Date.now() + 60_000) {
+        localStorage.setItem(TOKEN_KEY, legacyToken);
+        localStorage.setItem(TOKEN_EXPIRY_KEY, String(legacyExpiry));
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
+        return legacyToken;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -145,7 +161,7 @@ export class GoogleIdentityService {
 
   private readExpiry(): number {
     try {
-      const expiry = Number(sessionStorage.getItem(TOKEN_EXPIRY_KEY));
+      const expiry = Number(localStorage.getItem(TOKEN_EXPIRY_KEY) ?? sessionStorage.getItem(TOKEN_EXPIRY_KEY));
       return Number.isFinite(expiry) ? expiry : 0;
     } catch {
       return 0;
@@ -153,21 +169,25 @@ export class GoogleIdentityService {
   }
 
   private hasStoredGrant(): boolean {
-    try { return Boolean(sessionStorage.getItem(TOKEN_KEY)); }
+    try { return Boolean(localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY)); }
     catch { return false; }
   }
 
   private persistToken(token: string | null, expiry: number): void {
     try {
       if (token) {
-        sessionStorage.setItem(TOKEN_KEY, token);
-        sessionStorage.setItem(TOKEN_EXPIRY_KEY, String(expiry));
+        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(TOKEN_EXPIRY_KEY, String(expiry));
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
       } else {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(TOKEN_EXPIRY_KEY);
         sessionStorage.removeItem(TOKEN_KEY);
         sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
       }
     } catch {
-      // A restricted browser storage policy falls back to this service's in-memory token.
+      // A restricted local storage policy retains the token in memory for this app session.
     }
   }
 }
