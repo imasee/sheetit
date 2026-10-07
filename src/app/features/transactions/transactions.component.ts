@@ -20,9 +20,8 @@ export class TransactionsComponent {
   readonly rows = computed(() => {
     const filter = this.filter();
     const direction = this.sortDirection() === 'asc' ? 1 : -1;
-    return this.store.transactions()
-      .filter((txn) => filter === 'All' || txn.currency === filter)
-      .toSorted((a, b) => direction * (this.sortKey() === 'date' ? a.date.localeCompare(b.date) : a.amount - b.amount));
+    const selectedRows = this.store.transactions().filter((txn) => filter === 'All' || txn.currency === filter);
+    return selectedRows.sort((a, b) => direction * (this.sortKey() === 'date' ? a.date.localeCompare(b.date) : a.amount - b.amount));
   });
   private readonly dialog = inject(MatDialog);
   formatMoney(value: number, currency: Currency): string { return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value); }

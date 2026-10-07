@@ -22,7 +22,7 @@ If no matching spreadsheet exists, Sheetit asks before creating one. **Not now**
 ## Spreadsheet schema
 
 - `People!A:E`: `EntityId`, `Name`, `Phone`, `Email`, `Notes`
-- `Transactions!A:J`: `TxId`, `Date`, `EntityId`, `Type`, `Amount`, `Currency`, `Category`, `Notes`, `Status`, `CreatedAt`
+- `Transactions!A:K`: `TxId`, `Date`, `EntityId`, `Type`, `Amount`, `Currency`, `Category`, `Notes`, `Status`, `CreatedAt`, `Description`
 - `Payments!A:I`: `PaymentId`, `TxId`, `Date`, `Direction`, `Amount`, `Currency`, `Notes`, `Status`, `CreatedAt`
 - `Settings!A:B`: `Setting`, `Value`; the `defaultCurrency` setting defaults to `INR` and is loaded during sync.
 
