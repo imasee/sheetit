@@ -1,14 +1,16 @@
 <section class="action-dialog" aria-labelledby="transaction-actions-title">
   <header class="dialog-heading"><div><div class="eyebrow">TRANSACTION</div><h2 id="transaction-actions-title">Manage transaction</h2><p>{{ transaction.date }} · {{ transaction.currency }} {{ transaction.amount | number:'1.2-2' }}</p></div><button mat-dialog-close class="close-button" type="button" aria-label="Close"><mat-icon>close</mat-icon></button></header>
-  @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
-  <form class="status-form" [formGroup]="statusForm" (ngSubmit)="saveStatus()"><label class="form-label" for="transaction-status">Status</label><div class="status-controls"><select id="transaction-status" class="ts-control" formControlName="status">@for (status of statuses; track status) { <option [value]="status">{{ status === 'Void' ? 'Remove from ledger (void)' : status }}</option> }</select><button class="ts-button-secondary" type="submit" [disabled]="saving() || statusForm.controls.status.value === transaction.status">Update</button></div></form>
-  @if (transaction.type !== 'Expense') {
-    <section class="payment-section" aria-labelledby="payment-title"><div class="section-heading"><div><h3 id="payment-title">Payments</h3><p>{{ formatAmount(paid) }} paid · {{ formatAmount(remaining) }} remaining</p></div></div>
-      @if (paymentHistory.length) { <ul class="payment-list">@for (payment of paymentHistory; track payment.paymentId) { <li><span>{{ payment.direction }} · {{ payment.date }} <small>{{ payment.status }}</small></span><strong>{{ formatAmount(payment.amount) }}</strong></li> }</ul> }
-      @if (canRecordPayment) {
-        <form class="payment-form" [formGroup]="paymentForm" (ngSubmit)="addPayment()"><p class="direction-note">Record money {{ paymentDirection.toLowerCase() }} toward this transaction.</p><label class="form-label" for="payment-amount">Amount</label><input id="payment-amount" class="ts-control" type="number" min="0.01" step="0.01" [max]="remaining" formControlName="amount" [placeholder]="formatAmount(remaining)"><label class="form-label" for="payment-date">Payment date</label><input id="payment-date" class="ts-control" type="date" formControlName="date"><label class="form-label" for="payment-notes">Note <span>(optional)</span></label><textarea id="payment-notes" class="ts-control" rows="2" formControlName="notes" placeholder="Payment details"></textarea><button class="ts-button-primary" type="submit" [disabled]="saving()">Record payment</button></form>
-      } @else { <p class="direction-note">{{ transaction.status === 'Void' ? 'This transaction is void.' : 'This transaction is fully paid.' }}</p> }
-    </section>
-  }
+  <div class="action-dialog-content">
+    @if (error()) { <p class="error-message" role="alert">{{ error() }}</p> }
+    <form class="status-form" [formGroup]="statusForm" (ngSubmit)="saveStatus()"><label class="form-label" for="transaction-status">Status</label><div class="status-controls"><select id="transaction-status" class="ts-control" formControlName="status">@for (status of statuses; track status) { <option [value]="status">{{ status === 'Void' ? 'Remove from ledger (void)' : status }}</option> }</select><button class="ts-button-secondary" type="submit" [disabled]="saving() || statusForm.controls.status.value === transaction.status">Update</button></div></form>
+    @if (transaction.type !== 'Expense') {
+      <section class="payment-section" aria-labelledby="payment-title"><div class="section-heading"><div><h3 id="payment-title">Payments</h3><p>{{ formatAmount(paid) }} paid · {{ formatAmount(remaining) }} remaining</p></div></div>
+        @if (paymentHistory.length) { <ul class="payment-list">@for (payment of paymentHistory; track payment.paymentId) { <li><span>{{ payment.direction }} · {{ payment.date }} <small>{{ payment.status }}</small></span><strong>{{ formatAmount(payment.amount) }}</strong></li> }</ul> }
+        @if (canRecordPayment) {
+          <form class="payment-form" [formGroup]="paymentForm" (ngSubmit)="addPayment()"><p class="direction-note">Record money {{ paymentDirection.toLowerCase() }} toward this transaction.</p><label class="form-label" for="payment-amount">Amount</label><input id="payment-amount" class="ts-control" type="number" min="0.01" step="0.01" [max]="remaining" formControlName="amount" [placeholder]="formatAmount(remaining)"><label class="form-label" for="payment-date">Payment date</label><input id="payment-date" class="ts-control" type="date" formControlName="date"><label class="form-label" for="payment-notes">Note <span>(optional)</span></label><textarea id="payment-notes" class="ts-control" rows="2" formControlName="notes" placeholder="Payment details"></textarea><button class="ts-button-primary" type="submit" [disabled]="saving()">Record payment</button></form>
+        } @else { <p class="direction-note">{{ transaction.status === 'Void' ? 'This transaction is void.' : 'This transaction is fully paid.' }}</p> }
+      </section>
+    }
+  </div>
   <footer><button class="ts-button-secondary" type="button" mat-dialog-close>Done</button></footer>
 </section>
