@@ -9,9 +9,11 @@
 .peer-contact { display: block; max-width: 260px; margin: 4px 0 0 25px; overflow: hidden; color: var(--text-secondary); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .peer-amount { min-width: 110px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .positive { color: var(--theme-positive) !important; }.negative { color: var(--theme-negative) !important; }
-.peer-actions { width: 86px; text-align: right; }
+.peer-actions { min-width: 190px; text-align: right; white-space: nowrap; }
+.archived-badge { padding: 3px 6px; border: 1px solid var(--theme-border); border-radius: 999px; color: var(--text-secondary); font-size: 9px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
 .table-action { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 34px; padding: 0 8px; border: 1px solid var(--theme-border-strong); border-radius: 8px; color: var(--text-secondary); background: var(--theme-surface); font-size: 11px; font-weight: 600; cursor: pointer; }
 .table-action:hover { color: var(--text-primary); background: var(--theme-surface-hover); }.table-action mat-icon { width: 15px; height: 15px; font-size: 15px; }
+.table-action-danger { color: var(--theme-negative); }
 .detail-row > td { padding: 0; background: var(--theme-surface-raised); }
 .peer-details { display: grid; grid-template-columns: minmax(180px, .7fr) minmax(280px, 1.3fr); gap: 22px; padding: 18px 22px 20px 42px; }
 .peer-details h3 { margin: 0 0 10px; color: var(--text-secondary); font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }

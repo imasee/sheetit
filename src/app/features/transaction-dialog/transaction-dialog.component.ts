@@ -21,7 +21,8 @@ export class TransactionDialogComponent {
   readonly types: TransactionType[] = ['Expense', 'Lent_To_Them', 'Borrowed_From_Them'];
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
-  readonly personMode = signal<'existing' | 'new'>(this.store.people().length ? 'existing' : 'new');
+  readonly personMode = signal<'existing' | 'new'>(this.store.people().some((person) => person.status === 'Active') ? 'existing' : 'new');
+  hasActivePeople(): boolean { return this.store.people().some((person) => person.status === 'Active'); }
   readonly form = this.fb.group({
     type: this.fb.control<TransactionType>('Lent_To_Them', Validators.required),
     entityId: this.fb.control(''),
@@ -60,7 +61,7 @@ export class TransactionDialogComponent {
       if (values.type !== 'Expense' && this.personMode() === 'new') {
         const person: Person = {
           entityId: crypto.randomUUID(), name: values.newPersonName.trim(), phone: values.newPersonPhone.trim(),
-          email: values.newPersonEmail.trim(), notes: this.showLocalComments ? values.newPersonNotes.trim() : '',
+          email: values.newPersonEmail.trim(), notes: this.showLocalComments ? values.newPersonNotes.trim() : '', status: 'Active',
         };
         await this.store.addPerson(person);
         entityId = person.entityId;

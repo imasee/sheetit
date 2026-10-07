@@ -12,6 +12,7 @@ export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 /** Pending entries affect active balances; Cleared and Void entries do not. */
 export type TransactionStatus = 'Cleared' | 'Pending' | 'Void';
 export type PaymentDirection = 'Received' | 'Sent';
+export type PersonStatus = 'Active' | 'Archived';
 
 export interface Payment {
   paymentId: string;
@@ -31,6 +32,7 @@ export interface Person {
   phone: string;
   email: string;
   notes: string;
+  status: PersonStatus;
 }
 
 export interface Transaction {

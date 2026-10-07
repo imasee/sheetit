@@ -103,6 +103,22 @@ export const TrackseeStore = signalStore(
         throw error;
       }
     },
+    async updatePayment(payment: Payment): Promise<void> {
+      const transaction = store.transactions().find((item) => item.txId === payment.txId);
+      if (!transaction || transaction.type === 'Expense') throw new Error('This payment is not linked to an available peer transaction.');
+      const expectedDirection = transaction.type === 'Lent_To_Them' ? 'Received' : 'Sent';
+      if (payment.direction !== expectedDirection || payment.currency !== transaction.currency) throw new Error('Payment direction and currency must match the selected transaction.');
+      const allocated = store.payments().filter((item) => item.txId === payment.txId && item.paymentId !== payment.paymentId && item.status === 'Cleared').reduce((total, item) => total + item.amount, 0);
+      if (payment.status === 'Cleared' && payment.amount > Math.max(0, transaction.amount - allocated)) throw new Error('Payment exceeds the transaction’s remaining balance.');
+      patchState(store, { syncStatus: 'syncing', error: null });
+      try {
+        await sheets.updatePayment(payment);
+        patchState(store, (state) => ({ payments: state.payments.map((item) => item.paymentId === payment.paymentId ? payment : item), syncStatus: 'ready' as const, error: null, lastSyncedAt: new Date().toISOString() }));
+      } catch (error) {
+        patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to update this payment.' });
+        throw error;
+      }
+    },
     async setTransactionStatus(txId: string, status: TransactionStatus): Promise<void> {
       await sheets.updateTransactionStatus(txId, status);
       patchState(store, (state) => ({ transactions: state.transactions.map((item) => item.txId === txId ? { ...item, status } : item), lastSyncedAt: new Date().toISOString() }));
@@ -148,6 +164,19 @@ export const TrackseeStore = signalStore(
         }));
       } catch (error) {
         patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to update this person.' });
+        throw error;
+      }
+    },
+    async deletePerson(entityId: string): Promise<void> {
+      if (store.transactions().some((transaction) => transaction.entityId === entityId)) {
+        throw new Error('This person has ledger history. Archive them to preserve transaction and payment records.');
+      }
+      patchState(store, { syncStatus: 'syncing', error: null });
+      try {
+        await sheets.deletePerson(entityId);
+        patchState(store, (state) => ({ people: state.people.filter((person) => person.entityId !== entityId), syncStatus: 'ready' as const, error: null, lastSyncedAt: new Date().toISOString() }));
+      } catch (error) {
+        patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to delete this person.' });
         throw error;
       }
     },

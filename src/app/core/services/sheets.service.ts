@@ -3,14 +3,14 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { GoogleIdentityService } from '../google/google-identity.service';
 import { SpreadsheetWorkspaceService } from './spreadsheet-workspace.service';
-import { CURRENCIES, Currency, LedgerImportBundle, Payment, PaymentDirection, Person, Transaction, TRANSACTION_TYPES, TransactionStatus } from '../models/tracksee.models';
+import { CURRENCIES, Currency, LedgerImportBundle, Payment, PaymentDirection, Person, PersonStatus, Transaction, TRANSACTION_TYPES, TransactionStatus } from '../models/tracksee.models';
 
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
-const PEOPLE_RANGE = 'People!A2:E';
+const PEOPLE_RANGE = 'People!A2:F';
 const TRANSACTIONS_RANGE = 'Transactions!A2:J';
 const PAYMENTS_RANGE = 'Payments!A2:I';
 const SETTINGS_RANGE = 'Settings!A2:B';
-const PEOPLE_HEADERS = ['EntityId', 'Name', 'Phone', 'Email', 'Notes'];
+const PEOPLE_HEADERS = ['EntityId', 'Name', 'Phone', 'Email', 'Notes', 'Status'];
 const TRANSACTION_HEADERS = ['TxId', 'Date', 'EntityId', 'Type', 'Amount', 'Currency', 'Category', 'Notes', 'Status', 'CreatedAt'];
 const PAYMENT_HEADERS = ['PaymentId', 'TxId', 'Date', 'Direction', 'Amount', 'Currency', 'Notes', 'Status', 'CreatedAt'];
 const SETTINGS_HEADERS = ['Setting', 'Value'];
@@ -26,7 +26,7 @@ export class SheetsService {
     const rows = await this.getValues(PEOPLE_RANGE);
     return rows.map((row) => ({
       entityId: this.cell(row, 0), name: this.cell(row, 1), phone: this.cell(row, 2),
-      email: this.cell(row, 3), notes: this.cell(row, 4),
+      email: this.cell(row, 3), notes: this.cell(row, 4), status: this.readPersonStatus(this.cell(row, 5)),
     })).filter((person) => person.entityId && person.name);
   }
 
@@ -122,8 +122,8 @@ export class SheetsService {
 
   async appendPerson(person: Person): Promise<void> {
     await firstValueFrom(this.http.post(
-      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent('People!A2:E')}:append`,
-      { values: [[person.entityId, person.name, person.phone, person.email, person.notes]] },
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(PEOPLE_RANGE)}:append`,
+      { values: [[person.entityId, person.name, person.phone, person.email, person.notes, person.status]] },
       { headers: await this.headers(), params: { valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS' } },
     ));
   }
@@ -134,9 +134,24 @@ export class SheetsService {
     if (rowIndex < 0) throw new Error('This person is no longer in the selected People sheet. Sync and try again.');
     const rowNumber = rowIndex + 2;
     await firstValueFrom(this.http.put(
-      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(`People!A${rowNumber}:E${rowNumber}`)}`,
-      { values: [[person.entityId, person.name, person.phone, person.email, person.notes]] },
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(`People!A${rowNumber}:F${rowNumber}`)}`,
+      { values: [[person.entityId, person.name, person.phone, person.email, person.notes, person.status]] },
       { headers: await this.headers(), params: { valueInputOption: 'RAW' } },
+    ));
+  }
+
+  async deletePerson(entityId: string): Promise<void> {
+    const [people, transactions] = await Promise.all([this.getValues(PEOPLE_RANGE), this.getValues(TRANSACTIONS_RANGE)]);
+    if (transactions.some((row) => this.cell(row, 2) === entityId)) {
+      throw new Error('This person has ledger history. Archive them to preserve transaction and payment records.');
+    }
+    const rowIndex = people.findIndex((row) => this.cell(row, 0) === entityId);
+    if (rowIndex < 0) throw new Error('This person is no longer in the selected sheet. Sync and try again.');
+    const rowNumber = rowIndex + 2;
+    await firstValueFrom(this.http.post(
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values:batchClear`,
+      { ranges: [`People!A${rowNumber}:F${rowNumber}`] },
+      { headers: await this.headers() },
     ));
   }
 
@@ -151,13 +166,13 @@ export class SheetsService {
         requests: missingTabs.map((title) => ({ addSheet: { properties: { title, gridProperties: { frozenRowCount: 1 } } } })),
       }, { headers: tokenHeaders }));
     }
-    const current = await this.getValues('People!A1:E1').catch(() => []);
+    const current = await this.getValues('People!A1:F1').catch(() => []);
     const txnHeaders = await this.getValues('Transactions!A1:J1').catch(() => []);
     const paymentHeaders = await this.getValues('Payments!A1:I1').catch(() => []);
     const settingHeaders = await this.getValues('Settings!A1:B1').catch(() => []);
     const settingRows = await this.getValues(SETTINGS_RANGE).catch(() => []);
     const requests: { range: string; values: string[][] }[] = [];
-    this.addHeaderRequest(current, 'People!A1:E1', PEOPLE_HEADERS, requests);
+    this.addPeopleHeaderRequest(current, requests);
     this.addHeaderRequest(txnHeaders, 'Transactions!A1:J1', TRANSACTION_HEADERS, requests);
     this.addHeaderRequest(paymentHeaders, 'Payments!A1:I1', PAYMENT_HEADERS, requests);
     this.addHeaderRequest(settingHeaders, 'Settings!A1:B1', SETTINGS_HEADERS, requests);
@@ -176,7 +191,7 @@ export class SheetsService {
 
   async importJoinedLedger(bundle: LedgerImportBundle): Promise<void> {
     const [peopleRows, transactionRows, paymentRows] = await Promise.all([
-      this.getValues('People!A2:E'),
+      this.getValues(PEOPLE_RANGE),
       this.getValues(TRANSACTIONS_RANGE),
       this.getValues(PAYMENTS_RANGE),
     ]);
@@ -205,8 +220,8 @@ export class SheetsService {
 
     const data: { range: string; values: (string | number)[][] }[] = [];
     if (bundle.people.length) data.push({
-      range: `People!A${peopleRows.length + 2}:E`,
-      values: bundle.people.map((person) => [person.entityId, person.name, person.phone, person.email, person.notes]),
+      range: `People!A${peopleRows.length + 2}:F`,
+      values: bundle.people.map((person) => [person.entityId, person.name, person.phone, person.email, person.notes, person.status]),
     });
     if (bundle.transactions.length) data.push({
       range: `Transactions!A${transactionRows.length + 2}:J`,
@@ -221,6 +236,18 @@ export class SheetsService {
       `${SHEETS_API}/${this.requireSpreadsheetId()}/values:batchUpdate`,
       { valueInputOption: 'RAW', data },
       { headers: await this.headers() },
+    ));
+  }
+
+  async updatePayment(payment: Payment): Promise<void> {
+    const rows = await this.getValues(PAYMENTS_RANGE);
+    const rowIndex = rows.findIndex((row) => this.cell(row, 0) === payment.paymentId);
+    if (rowIndex < 0) throw new Error('This payment is no longer in the selected sheet. Sync and try again.');
+    const rowNumber = rowIndex + 2;
+    await firstValueFrom(this.http.put(
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(`Payments!A${rowNumber}:I${rowNumber}`)}`,
+      { values: [[payment.paymentId, payment.txId, payment.date, payment.direction, payment.amount, payment.currency, payment.notes, payment.status, payment.createdAt]] },
+      { headers: await this.headers(), params: { valueInputOption: 'RAW' } },
     ));
   }
 
@@ -290,7 +317,24 @@ export class SheetsService {
       throw new Error(`${range.split('!')[0]} has unexpected column headers. Use the SheetFi schema listed in Settings.`);
     }
   }
+  private addPeopleHeaderRequest(rows: string[][], requests: { range: string; values: string[][] }[]): void {
+    if (!rows.length || !rows[0]?.some((cell) => cell.trim())) {
+      requests.push({ range: 'People!A1:F1', values: [PEOPLE_HEADERS] });
+      return;
+    }
+    if (PEOPLE_HEADERS.slice(0, 5).some((header, index) => rows[0]?.[index]?.trim() !== header)) {
+      throw new Error('People has unexpected column headers. Use the SheetFi schema listed in Settings.');
+    }
+    const statusHeader = rows[0]?.[5]?.trim();
+    if (!statusHeader) requests.push({ range: 'People!F1', values: [['Status']] });
+    else if (statusHeader !== 'Status') throw new Error('People has unexpected column headers. Use the SheetFi schema listed in Settings.');
+  }
   private isCurrency(value: string): value is Currency { return (CURRENCIES as readonly string[]).includes(value); }
   private isTransactionType(value: string): value is Transaction['type'] { return (TRANSACTION_TYPES as readonly string[]).includes(value); }
   private isStatus(value: string): value is TransactionStatus { return ['Cleared', 'Pending', 'Void'].includes(value); }
+  private readPersonStatus(value: string): PersonStatus {
+    if (!value) return 'Active';
+    if (value === 'Active' || value === 'Archived') return value;
+    throw new Error(`People has an unsupported status: ${value}.`);
+  }
 }

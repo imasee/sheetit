@@ -1,8 +1,8 @@
 <section class="page-heading"><div><div class="eyebrow">YOUR NETWORK</div><h1>People</h1><p class="subtitle">Manage contacts and review balances by currency.</p></div><button class="ts-button-primary" type="button" (click)="openPersonDialog()" [disabled]="!workspace.active()"><mat-icon>person_add</mat-icon>Add person</button></section>
 <section class="people-table-section" aria-label="People and balances">
-  <div class="table-intro"><div><h2>People ledger</h2><p>{{ store.people().length }} contacts · grouped by person</p></div><span>Expand a row for contact details and recent activity.</span></div>
+  <div class="table-intro"><div><h2>People ledger</h2><p>{{ activeCount() }} active · {{ archivedCount() }} archived</p></div><div class="table-tools"><label for="people-filter">Show</label><select id="people-filter" class="ts-control people-filter" [value]="personFilter()" (change)="personFilter.set($any($event.target).value)"><option value="Active">Active</option><option value="Archived">Archived</option><option value="All">All people</option></select><span>Expand a row for contact details and recent activity.</span></div></div>
   @if (workspace.active()) {
-    <ts-peer-balance-table [entries]="peerRows()" [transactions]="store.transactions()" [allowEdit]="true" (editPerson)="openPersonDialog($event)" />
+    <ts-peer-balance-table [entries]="visiblePeerRows()" [transactions]="store.transactions()" [allowEdit]="true" [allowPersonActions]="true" (editPerson)="openPersonDialog($event)" (archivePerson)="archivePerson($event)" (restorePerson)="restorePerson($event)" (deletePerson)="deletePerson($event)" />
   } @else {
     <div class="table-empty"><mat-icon>table_view</mat-icon><strong>Connect a spreadsheet to manage people</strong><span>Once a ledger is selected, your contacts will appear here.</span></div>
   }

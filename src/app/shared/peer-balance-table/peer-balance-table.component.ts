@@ -16,7 +16,11 @@ export class PeerBalanceTableComponent {
   readonly transactions = input<Transaction[]>([]);
   readonly limit = input<number | null>(null);
   readonly allowEdit = input(false);
+  readonly allowPersonActions = input(false);
   readonly editPerson = output<Person>();
+  readonly archivePerson = output<Person>();
+  readonly restorePerson = output<Person>();
+  readonly deletePerson = output<Person>();
   readonly currencies = CURRENCIES;
   readonly showLocalComments = environment.showLocalComments;
   readonly expanded = signal<ReadonlySet<string>>(new Set());
@@ -37,6 +41,7 @@ export class PeerBalanceTableComponent {
   });
 
   isExpanded(entityId: string): boolean { return this.expanded().has(entityId); }
+  hasTransactions(entityId: string): boolean { return this.transactions().some((transaction) => transaction.entityId === entityId); }
 
   toggle(entityId: string): void {
     this.expanded.update((current) => {

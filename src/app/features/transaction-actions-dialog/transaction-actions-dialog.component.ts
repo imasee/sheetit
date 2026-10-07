@@ -18,6 +18,7 @@ export class TransactionActionsDialogComponent {
   private readonly toast = inject(ToastService);
   readonly saving = signal(false);
   readonly error = signal('');
+  readonly editingPayment = signal<Payment | null>(null);
   readonly statuses: TransactionStatus[] = ['Cleared', 'Pending', 'Void'];
   readonly statusForm = this.fb.group({ status: this.fb.control<TransactionStatus>(this.transaction.status, Validators.required) });
   readonly paymentForm = this.fb.group({ amount: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]), date: this.fb.control(new Date().toISOString().slice(0, 10), Validators.required), notes: this.fb.control('') });
@@ -28,6 +29,37 @@ export class TransactionActionsDialogComponent {
   readonly paymentHistory = this.store.payments().filter((payment) => payment.txId === this.transaction.txId).sort((a, b) => b.date.localeCompare(a.date));
 
   formatAmount(amount: number): string { return new Intl.NumberFormat(undefined, { style: 'currency', currency: this.transaction.currency }).format(amount); }
+  paymentAmountLimit(): number {
+    const editing = this.editingPayment();
+    return Math.max(0, this.remaining + (editing?.status === 'Cleared' ? editing.amount : 0));
+  }
+
+  editPayment(payment: Payment): void {
+    if (this.saving() || payment.status === 'Void') return;
+    this.editingPayment.set(payment);
+    this.error.set('');
+    this.paymentForm.setValue({ amount: payment.amount, date: payment.date, notes: payment.notes });
+  }
+
+  cancelPaymentEdit(): void {
+    this.editingPayment.set(null);
+    this.paymentForm.reset({ amount: null, date: new Date().toISOString().slice(0, 10), notes: '' });
+    this.error.set('');
+  }
+
+  async removePayment(payment: Payment): Promise<void> {
+    if (this.saving() || payment.status === 'Void') return;
+    if (!window.confirm(`Remove this ${this.formatAmount(payment.amount)} ${payment.direction.toLowerCase()} payment? It will remain in history but stop affecting the balance.`)) return;
+    this.saving.set(true);
+    this.error.set('');
+    try {
+      await this.store.updatePayment({ ...payment, status: 'Void' });
+      this.toast.show('Payment removed from the active balance.', 'success');
+      await this.announcer.announce('Payment removed from the active balance.', 'polite');
+      this.dialogRef.close(true);
+    } catch (error) { this.error.set(error instanceof Error ? error.message : 'Could not remove this payment.'); }
+    finally { this.saving.set(false); }
+  }
 
   async saveStatus(): Promise<void> {
     if (this.statusForm.invalid || this.saving()) return;
@@ -48,13 +80,24 @@ export class TransactionActionsDialogComponent {
     this.paymentForm.markAllAsTouched();
     if (this.paymentForm.invalid || this.saving()) return;
     const { amount, date, notes } = this.paymentForm.getRawValue();
-    if (!amount || amount > this.remaining) { this.error.set(`Enter an amount up to ${this.formatAmount(this.remaining)}.`); return; }
-    const payment: Payment = { paymentId: crypto.randomUUID(), txId: this.transaction.txId, date, direction: this.paymentDirection, amount, currency: this.transaction.currency, notes: notes.trim(), status: 'Cleared', createdAt: new Date().toISOString() };
+    const editing = this.editingPayment();
+    const alreadyPaid = this.paid - (editing?.status === 'Cleared' ? editing.amount : 0);
+    const available = Math.max(0, this.transaction.amount - alreadyPaid);
+    if (!amount || amount > available) { this.error.set(`Enter an amount up to ${this.formatAmount(available)}.`); return; }
+    const payment: Payment = editing
+      ? { ...editing, date, amount, notes: notes.trim() }
+      : { paymentId: crypto.randomUUID(), txId: this.transaction.txId, date, direction: this.paymentDirection, amount, currency: this.transaction.currency, notes: notes.trim(), status: 'Cleared', createdAt: new Date().toISOString() };
     this.saving.set(true); this.error.set('');
     try {
-      await this.store.addPayment(payment);
-      this.toast.show('Payment recorded and linked to this transaction.', 'success');
-      await this.announcer.announce('Payment recorded.', 'polite');
+      if (editing) {
+        await this.store.updatePayment(payment);
+        this.toast.show('Payment updated.', 'success');
+        await this.announcer.announce('Payment updated.', 'polite');
+      } else {
+        await this.store.addPayment(payment);
+        this.toast.show('Payment recorded and linked to this transaction.', 'success');
+        await this.announcer.announce('Payment recorded.', 'polite');
+      }
       this.dialogRef.close(true);
     } catch (error) { this.error.set(error instanceof Error ? error.message : 'Could not record this payment.'); }
     finally { this.saving.set(false); }
