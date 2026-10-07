@@ -7,7 +7,9 @@ import { GoogleIdentityService } from '../../core/google/google-identity.service
 import { ThemeName, ThemeService } from '../../core/services/theme.service';
 import { SpreadsheetWorkspaceService } from '../../core/services/spreadsheet-workspace.service';
 import { TrackseeStore } from '../../core/store/tracksee.store';
+import { CURRENCIES } from '../../core/models/tracksee.models';
 import { SpreadsheetDialogComponent, SpreadsheetDialogData } from '../spreadsheet-dialog/spreadsheet-dialog.component';
+import { LedgerTransferDialogComponent } from '../ledger-transfer-dialog/ledger-transfer-dialog.component';
 import { environment } from '../../../environments/environment';
 
 @Component({ selector: 'ts-settings', standalone: true, imports: [MatIconModule], templateUrl: './settings.component.html', styleUrl: './settings.component.scss', changeDetection: ChangeDetectionStrategy.OnPush })
@@ -18,8 +20,12 @@ export class SettingsComponent {
   readonly workspace = inject(SpreadsheetWorkspaceService);
   readonly clientReady = this.identity.isConfigured;
   readonly namingPattern = environment.spreadsheetNamingPattern;
+  readonly currencies = CURRENCIES;
   readonly busy = signal(false);
   readonly message = signal<string | null>(null);
+  readonly currencySaving = signal(false);
+  readonly currencyMessage = signal<string | null>(null);
+  readonly currencyMessageIsError = signal(false);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   readonly themes: { id: ThemeName; name: string; description: string }[] = [
@@ -57,6 +63,30 @@ export class SettingsComponent {
   }
 
   async createSpreadsheet(): Promise<void> { await this.openSpreadsheetDialog('new'); }
+
+  openLedgerTransfer(): void {
+    this.dialog.open(LedgerTransferDialogComponent, {
+      width: 'min(680px, calc(100vw - 28px))', maxWidth: '680px', autoFocus: 'first-tabbable',
+      restoreFocus: true, ariaLabelledBy: 'ledger-transfer-title',
+    });
+  }
+
+  async updateDefaultCurrency(value: string): Promise<void> {
+    const currency = CURRENCIES.find((item) => item === value);
+    if (!currency || this.currencySaving() || !this.workspace.active()) return;
+    this.currencySaving.set(true);
+    this.currencyMessage.set(null);
+    this.currencyMessageIsError.set(false);
+    try {
+      await this.store.setDefaultCurrency(currency);
+      this.currencyMessage.set(`New entries will use ${currency} by default.`);
+    } catch (error) {
+      this.currencyMessageIsError.set(true);
+      this.currencyMessage.set(error instanceof Error ? error.message : 'Could not save the default currency.');
+    } finally {
+      this.currencySaving.set(false);
+    }
+  }
 
   async signOut(): Promise<void> {
     this.identity.clearSession();

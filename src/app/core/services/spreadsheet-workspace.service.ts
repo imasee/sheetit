@@ -83,6 +83,7 @@ export class SpreadsheetWorkspaceService {
           { properties: { title: 'People', gridProperties: { frozenRowCount: 1 } } },
           { properties: { title: 'Transactions', gridProperties: { frozenRowCount: 1 } } },
           { properties: { title: 'Payments', gridProperties: { frozenRowCount: 1 } } },
+          { properties: { title: 'Settings', gridProperties: { frozenRowCount: 1 } } },
         ],
       },
       { headers: this.authHeaders(token) },

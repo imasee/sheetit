@@ -17,6 +17,25 @@
     <div class="connection-actions"><button class="sync-action" type="button" (click)="connectOrSync()" [disabled]="busy() || !clientReady()"><mat-icon>{{ busy() ? 'sync' : workspace.active() ? 'sync' : 'link' }}</mat-icon>{{ busy() ? 'Working…' : workspace.active() ? 'Sync selected' : 'Connect Google' }}</button><button class="new-sheet-action" type="button" (click)="createSpreadsheet()" [disabled]="busy() || !clientReady()"><mat-icon>add</mat-icon>New spreadsheet</button>@if (identity.accessToken()) { <button class="sign-out-action" type="button" (click)="signOut()">Sign out</button> }</div>
     <div class="setup-note"><strong>One-time setup</strong><p>Set your OAuth web client ID in <code>src/environments/environment.ts</code>. Enable Google Sheets API and Google Drive API in the same Google Cloud project, and authorize your app origin. No spreadsheet ID is needed.</p></div>
   </article>
+  <article class="settings-card currency-card">
+    <div class="card-icon"><mat-icon>currency_exchange</mat-icon></div>
+    <h2>Default entry currency</h2>
+    <p>Choose the currency preselected when you create a new transaction. Existing entries and currency totals stay unchanged.</p>
+    <label class="selector-label" for="default-currency">Default currency</label>
+    <select id="default-currency" class="ts-control currency-preference-select" [value]="store.defaultCurrency()" [disabled]="!workspace.active() || currencySaving() || busy() || workspace.discoveryState() === 'loading' || store.syncStatus() === 'syncing'" (change)="updateDefaultCurrency($any($event.target).value)">
+      @for (currency of currencies; track currency) { <option [value]="currency">{{ currency }}</option> }
+    </select>
+    @if (workspace.active()) { <p class="currency-help">Saved in this spreadsheet’s Settings tab and restored when you sync it.</p> }
+    @else { <p class="currency-help">Select or create a spreadsheet before choosing its default currency.</p> }
+    @if (currencySaving()) { <p class="currency-message" role="status">Saving preference…</p> }
+    @else if (currencyMessage(); as text) { <p class="currency-message" [class.error]="currencyMessageIsError()" [attr.role]="currencyMessageIsError() ? 'alert' : 'status'">{{ text }}</p> }
+  </article>
+  <article class="settings-card transfer-card">
+    <div class="card-icon"><mat-icon>swap_vert</mat-icon></div>
+    <h2>Import &amp; export</h2>
+    <p>Back up or restore joined transactions, people, and linked payments as JSON or CSV. Spreadsheet settings are kept separate.</p>
+    <button class="transfer-open-action" type="button" (click)="openLedgerTransfer()" [disabled]="!workspace.active() || store.syncStatus() !== 'ready' || busy()"><mat-icon>open_in_new</mat-icon>Open import &amp; export</button>
+  </article>
   <article class="settings-card theme-card"><div class="card-icon"><mat-icon>palette</mat-icon></div><h2>Appearance</h2><p>Pick a neutral palette for your workspace.</p><div class="theme-options" role="radiogroup" aria-label="Color theme">@for (theme of themes; track theme.id) { <button type="button" class="theme-option" role="radio" [attr.aria-checked]="themeService.theme() === theme.id" [class.selected]="themeService.theme() === theme.id" (click)="themeService.setTheme(theme.id)"><span class="theme-swatch" [attr.data-swatch]="theme.id"><i></i><i></i><i></i></span><span><strong>{{ theme.name }}</strong><small>{{ theme.description }}</small></span><mat-icon>{{ themeService.theme() === theme.id ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon></button> }</div></article>
   <article class="settings-card privacy-card"><div class="card-icon"><mat-icon>shield</mat-icon></div><h2>Private by design</h2><p>Google access tokens are kept in this browser tab’s session storage and expire automatically. Sheets API requests go directly from your browser to Google; no SheetFi server receives your ledger.</p><div class="scope-note"><mat-icon>lock</mat-icon><span>Permissions used: spreadsheet access and Drive metadata search for names matching the configured spreadsheet pattern.</span></div></article>
 </section>

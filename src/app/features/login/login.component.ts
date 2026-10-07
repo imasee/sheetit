@@ -13,6 +13,7 @@ export class LoginComponent {
   readonly appName = environment.appName;
   readonly identity = inject(GoogleIdentityService);
   readonly busy = signal(false);
+  readonly authAction = signal<'sign-in' | 'sign-up' | null>(null);
   readonly error = signal<string | null>(null);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -24,11 +25,21 @@ export class LoginComponent {
   }
 
   async signIn(): Promise<void> {
+    await this.authenticate('sign-in');
+  }
+
+  async signUp(): Promise<void> {
+    await this.authenticate('sign-up');
+  }
+
+  private async authenticate(action: 'sign-in' | 'sign-up'): Promise<void> {
     if (this.busy()) return;
     this.busy.set(true);
+    this.authAction.set(action);
     this.error.set(null);
     try {
-      await this.identity.signIn();
+      if (action === 'sign-up') await this.identity.signUp();
+      else await this.identity.signIn();
       const requested = this.route.snapshot.queryParamMap.get('returnUrl');
       const returnUrl = requested?.startsWith('/') && !requested.startsWith('//') && !requested.startsWith('/login')
         ? requested
@@ -38,6 +49,7 @@ export class LoginComponent {
       this.error.set(error instanceof Error ? error.message : 'Google sign-in failed. Please try again.');
     } finally {
       this.busy.set(false);
+      this.authAction.set(null);
     }
   }
 
