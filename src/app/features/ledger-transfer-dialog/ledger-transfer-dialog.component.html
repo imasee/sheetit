@@ -10,6 +10,10 @@
         <button class="ts-button-secondary" type="button" (click)="download('json')" [disabled]="!canExport()"><mat-icon>data_object</mat-icon>Export JSON</button>
         <button class="ts-button-secondary" type="button" (click)="download('csv')" [disabled]="!canExport()"><mat-icon>table_view</mat-icon>Export CSV</button>
       </div>
+      <div class="transfer-actions">
+        <button class="ts-button-secondary" type="button" (click)="copyToClipboard('json')" [disabled]="!canExport()"><mat-icon>content_copy</mat-icon>Copy JSON</button>
+        <button class="ts-button-secondary" type="button" (click)="copyToClipboard('csv')" [disabled]="!canExport()"><mat-icon>content_copy</mat-icon>Copy CSV</button>
+      </div>
       @if (!canExport()) { <p class="transfer-help">Sync the selected spreadsheet before exporting.</p> }
     </section>
 

@@ -103,7 +103,7 @@ export class LedgerTransferService {
     const type = this.readString(raw, 'type', label) as Transaction['type'];
     const currency = this.readString(raw, 'currency', label).toUpperCase() as Currency;
     const amount = Number(raw['amount']);
-    const status = (this.optionalString(raw, 'status') || 'Cleared') as TransactionStatus;
+    const status = (this.optionalString(raw, 'status') || 'Pending') as TransactionStatus;
     const transaction: Transaction = {
       txId: this.readString(raw, 'txId', label), date: this.readString(raw, 'date', label),
       entityId: this.optionalString(raw, 'entityId'), type, amount, currency,

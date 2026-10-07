@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { CURRENCIES, TRANSACTION_TYPES, Currency, Person, Transaction, TransactionType } from '../../core/models/tracksee.models';
+import { CURRENCIES, Currency, Person, Transaction, TransactionType } from '../../core/models/tracksee.models';
 import { TrackseeStore } from '../../core/store/tracksee.store';
 import { environment } from '../../../environments/environment';
 
@@ -18,7 +18,7 @@ export class TransactionDialogComponent {
   readonly store = inject(TrackseeStore);
   readonly showLocalComments = environment.showLocalComments;
   readonly currencies = CURRENCIES;
-  readonly types = TRANSACTION_TYPES;
+  readonly types: TransactionType[] = ['Expense', 'Lent_To_Them', 'Borrowed_From_Them'];
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
   readonly personMode = signal<'existing' | 'new'>(this.store.people().length ? 'existing' : 'new');
@@ -70,7 +70,7 @@ export class TransactionDialogComponent {
       const txn: Transaction = {
         txId: crypto.randomUUID(), date: values.date, entityId,
         type: values.type, amount: Number(values.amount), currency: values.currency,
-        category: values.category.trim(), notes: values.notes.trim(), status: 'Cleared', createdAt: new Date().toISOString(),
+        category: values.category.trim(), notes: values.notes.trim(), status: 'Pending', createdAt: new Date().toISOString(),
       };
       await this.store.addTransaction(txn);
       this.dialogRef.close(txn);

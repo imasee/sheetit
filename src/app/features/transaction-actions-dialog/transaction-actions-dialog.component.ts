@@ -24,7 +24,7 @@ export class TransactionActionsDialogComponent {
   readonly paymentDirection = this.transaction.type === 'Lent_To_Them' ? 'Received' : 'Sent';
   readonly paid = this.store.payments().filter((payment) => payment.txId === this.transaction.txId && payment.status === 'Cleared').reduce((total, payment) => total + payment.amount, 0);
   readonly remaining = Math.max(0, this.transaction.amount - this.paid);
-  readonly canRecordPayment = ['Lent_To_Them', 'Borrowed_From_Them'].includes(this.transaction.type) && this.transaction.status !== 'Void' && this.remaining > 0;
+  readonly canRecordPayment = ['Lent_To_Them', 'Borrowed_From_Them'].includes(this.transaction.type) && this.transaction.status === 'Pending' && this.remaining > 0;
   readonly paymentHistory = this.store.payments().filter((payment) => payment.txId === this.transaction.txId).sort((a, b) => b.date.localeCompare(a.date));
 
   formatAmount(amount: number): string { return new Intl.NumberFormat(undefined, { style: 'currency', currency: this.transaction.currency }).format(amount); }
@@ -32,6 +32,7 @@ export class TransactionActionsDialogComponent {
   async saveStatus(): Promise<void> {
     if (this.statusForm.invalid || this.saving()) return;
     const status = this.statusForm.controls.status.value;
+    if (status === 'Cleared' && this.transaction.status !== 'Cleared' && !window.confirm('Mark this transaction cleared? Only do this after confirming the balance is settled.')) return;
     if (status === 'Void' && !window.confirm('Void this transaction? It will remain in the ledger for audit history, and its linked payments will no longer affect balances.')) return;
     this.saving.set(true); this.error.set('');
     try {

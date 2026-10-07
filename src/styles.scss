@@ -145,7 +145,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 @media (max-width: 600px) {
   .cdk-overlay-pane.mat-mdc-dialog-panel { width: 100vw !important; height: 100dvh; max-width: 100vw !important; margin: 0 !important; }
   .mat-mdc-dialog-container { width: 100vw; height: 100dvh; max-width: 100vw; max-height: 100dvh; padding: 0; }
-  .mat-mdc-dialog-container .mat-mdc-dialog-surface { width: 100%; height: 100%; max-height: 100dvh; border-radius: 0; }
+  .mat-mdc-dialog-container .mat-mdc-dialog-surface { display: flex; flex-direction: column; width: 100%; height: 100%; max-height: 100dvh; overflow: hidden; border-radius: 0; }
+  .mat-mdc-dialog-container .mat-mdc-dialog-surface > * { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: hidden; }
   .mat-mdc-dialog-container mat-dialog-content { flex: 1 1 auto; max-height: none; }
   .mat-mdc-dialog-container .dialog-heading,
   .mat-mdc-dialog-container .person-dialog-head { padding-top: calc(16px + env(safe-area-inset-top)); }

@@ -48,7 +48,7 @@ export class SheetsService {
       return {
         txId: this.cell(row, 0), date: this.cell(row, 1), entityId: this.cell(row, 2),
         type, amount, currency, category: this.cell(row, 6), notes: this.cell(row, 7),
-        status: this.isStatus(status) ? status : 'Cleared', createdAt: this.cell(row, 9),
+        status: this.isStatus(status) ? status : 'Pending', createdAt: this.cell(row, 9),
       };
     });
   }
