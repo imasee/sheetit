@@ -31,7 +31,7 @@
       <label><span class="field-label">Amount</span><input class="ts-control" formControlName="amount" type="text" tsThousandsSeparator inputmode="decimal" autocomplete="off" placeholder="0.00" />@if (form.controls.amount.touched && form.controls.amount.invalid) { <span class="field-error">Enter an amount greater than zero.</span> }</label>
       <label><span class="field-label">Currency</span><select class="ts-control" formControlName="currency">@for (currency of currencies; track currency) { <option [value]="currency">{{ currency }}</option> }</select></label>
     </div>
-    <label><span class="field-label">Date</span><ts-date-field formControlName="date" label="Transaction date" inputId="transaction-date" /></label>
+    <div class="date-form-field"><span class="field-label">Date</span><ts-date-field formControlName="date" label="Transaction date" inputId="transaction-date" /></div>
     @if (showLocalComments) { <label><span class="field-label">Notes <span class="field-optional">Optional</span></span><textarea class="ts-control min-h-24 resize-y" formControlName="notes" rows="3" maxlength="500" placeholder="Add a note for your records"></textarea></label> }
     @if (error(); as message) { <div class="form-error" role="alert"><mat-icon>error_outline</mat-icon>{{ message }}</div> }
   </form>
