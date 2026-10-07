@@ -21,4 +21,4 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Verify production build
-        run: npm run build -- --configuration production --base-href /sheetit/
+        run: npm run build -- --configuration production --base-href /
