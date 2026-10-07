@@ -42,6 +42,7 @@ export interface Transaction {
   type: TransactionType;
   amount: number;
   currency: Currency;
+  description: string;
   category: string;
   notes: string;
   status: TransactionStatus;

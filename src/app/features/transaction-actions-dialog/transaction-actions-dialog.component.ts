@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
-import { Payment, Transaction, TransactionStatus } from '../../core/models/tracksee.models';
+import { Payment, Transaction } from '../../core/models/tracksee.models';
 import { ToastService } from '../../core/services/toast.service';
 import { TrackseeStore } from '../../core/store/tracksee.store';
 import { ThousandsSeparatorDirective } from '../../shared/directives/thousands-separator.directive';
@@ -21,8 +21,6 @@ export class TransactionActionsDialogComponent {
   readonly saving = signal(false);
   readonly error = signal('');
   readonly editingPayment = signal<Payment | null>(null);
-  readonly statuses: TransactionStatus[] = ['Cleared', 'Pending', 'Void'];
-  readonly statusForm = this.fb.group({ status: this.fb.control<TransactionStatus>(this.transaction.status, Validators.required) });
   readonly paymentForm = this.fb.group({ amount: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]), date: this.fb.control(new Date().toISOString().slice(0, 10), Validators.required), notes: this.fb.control('') });
   readonly paymentDirection = this.transaction.type === 'Lent_To_Them' ? 'Received' : 'Sent';
   readonly paid = this.store.payments().filter((payment) => payment.txId === this.transaction.txId && payment.status === 'Cleared').reduce((total, payment) => total + payment.amount, 0);
@@ -63,21 +61,6 @@ export class TransactionActionsDialogComponent {
     finally { this.saving.set(false); }
   }
 
-  async saveStatus(): Promise<void> {
-    if (this.statusForm.invalid || this.saving()) return;
-    const status = this.statusForm.controls.status.value;
-    if (status === 'Cleared' && this.transaction.status !== 'Cleared' && !window.confirm('Mark this transaction cleared? Only do this after confirming the balance is settled.')) return;
-    if (status === 'Void' && !window.confirm('Void this transaction? It will remain in the ledger for audit history, and its linked payments will no longer affect balances.')) return;
-    this.saving.set(true); this.error.set('');
-    try {
-      await this.store.setTransactionStatus(this.transaction.txId, status);
-      this.toast.show(`Transaction status changed to ${status.toLowerCase()}.`, 'success');
-      await this.announcer.announce(`Transaction status changed to ${status.toLowerCase()}.`, 'polite');
-      this.dialogRef.close(true);
-    } catch (error) { this.error.set(error instanceof Error ? error.message : 'Could not update the transaction.'); }
-    finally { this.saving.set(false); }
-  }
-
   async addPayment(): Promise<void> {
     this.paymentForm.markAllAsTouched();
     if (this.paymentForm.invalid || this.saving()) return;
@@ -92,13 +75,21 @@ export class TransactionActionsDialogComponent {
     this.saving.set(true); this.error.set('');
     try {
       if (editing) {
-        await this.store.updatePayment(payment);
-        this.toast.show('Payment updated.', 'success');
-        await this.announcer.announce('Payment updated.', 'polite');
+        const statusUpdated = await this.store.updatePayment(payment);
+        this.toast.show(statusUpdated ? 'Payment updated.' : 'Payment updated, but the transaction status could not be changed. Sync the ledger to refresh it.', statusUpdated ? 'success' : 'error');
+        await this.announcer.announce(statusUpdated ? 'Payment updated.' : 'Payment updated, but transaction status could not be changed.', statusUpdated ? 'polite' : 'assertive');
       } else {
-        await this.store.addPayment(payment);
-        this.toast.show('Payment recorded and linked to this transaction.', 'success');
-        await this.announcer.announce('Payment recorded.', 'polite');
+        const result = await this.store.addPayment(payment);
+        if (result === 'cleared') {
+          this.toast.show('Payment recorded. The transaction is fully settled and marked cleared.', 'success');
+          await this.announcer.announce('Payment recorded. Transaction marked cleared.', 'polite');
+        } else if (result === 'status-update-failed') {
+          this.toast.show('Payment was recorded, but the status could not be updated. Sync the ledger and check the transaction.', 'error');
+          await this.announcer.announce('Payment recorded, but transaction status needs a sync.', 'assertive');
+        } else {
+          this.toast.show('Payment recorded and linked to this transaction.', 'success');
+          await this.announcer.announce('Payment recorded.', 'polite');
+        }
       }
       this.dialogRef.close(true);
     } catch (error) { this.error.set(error instanceof Error ? error.message : 'Could not record this payment.'); }

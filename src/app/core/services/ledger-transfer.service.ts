@@ -6,10 +6,10 @@ import {
 import { TrackseeStore } from '../store/tracksee.store';
 
 const CSV_HEADERS = [
-  'txId', 'date', 'entityId', 'type', 'amount', 'currency', 'category', 'notes', 'status', 'createdAt',
+  'txId', 'date', 'entityId', 'type', 'amount', 'currency', 'category', 'notes', 'status', 'createdAt', 'description',
   'personEntityId', 'personName', 'personPhone', 'personEmail', 'personNotes', 'personStatus', 'payments',
 ] as const;
-const REQUIRED_CSV_HEADERS = CSV_HEADERS.filter((header) => header !== 'personStatus');
+const REQUIRED_CSV_HEADERS = CSV_HEADERS.filter((header) => header !== 'personStatus' && header !== 'description');
 const STATUSES: readonly TransactionStatus[] = ['Cleared', 'Pending', 'Void'];
 
 @Injectable({ providedIn: 'root' })
@@ -26,7 +26,7 @@ export class LedgerTransferService {
     for (const { transaction, person, payments } of records) {
       const row: string[] = [
         transaction.txId, transaction.date, transaction.entityId, transaction.type, String(transaction.amount), transaction.currency,
-        transaction.category, transaction.notes, transaction.status, transaction.createdAt,
+        transaction.category, transaction.notes, transaction.status, transaction.createdAt, transaction.description,
         person?.entityId ?? '', person?.name ?? '', person?.phone ?? '', person?.email ?? '', person?.notes ?? '', person?.status ?? 'Active', JSON.stringify(payments),
       ];
       lines.push(row.map((value) => this.csvCell(value)).join(','));
@@ -87,7 +87,7 @@ export class LedgerTransferService {
       return this.normalizeRecord({
         transaction: {
           txId: values['txId'], date: values['date'], entityId: values['entityId'], type: values['type'], amount: values['amount'],
-          currency: values['currency'], category: values['category'], notes: values['notes'], status: values['status'], createdAt: values['createdAt'],
+          currency: values['currency'], category: values['category'], notes: values['notes'], status: values['status'], createdAt: values['createdAt'], description: values['description'] || '',
         },
         person: hasPerson ? {
           entityId: values['personEntityId'], name: values['personName'], phone: values['personPhone'],
@@ -108,7 +108,7 @@ export class LedgerTransferService {
     const transaction: Transaction = {
       txId: this.readString(raw, 'txId', label), date: this.readString(raw, 'date', label),
       entityId: this.optionalString(raw, 'entityId'), type, amount, currency,
-      category: this.optionalString(raw, 'category'), notes: this.optionalString(raw, 'notes'),
+      category: this.optionalString(raw, 'category'), notes: this.optionalString(raw, 'notes'), description: this.optionalString(raw, 'description'),
       status, createdAt: this.optionalString(raw, 'createdAt'),
     };
     if (!transaction.txId || !transaction.date || !TRANSACTION_TYPES.includes(type) || !this.isCurrency(currency) || !Number.isFinite(amount) || amount <= 0 || !STATUSES.includes(status)) {

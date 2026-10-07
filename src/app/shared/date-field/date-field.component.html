@@ -1,11 +1,11 @@
 <div class="date-field">
-  <button class="date-trigger ts-control" [id]="inputId()" type="button" [disabled]="disabled"
+  <button class="date-trigger ts-control" [id]="inputId()" type="button" cdkOverlayOrigin #origin="cdkOverlayOrigin" [disabled]="disabled"
     [attr.aria-label]="label() + ': ' + displayValue" [attr.aria-expanded]="calendarOpen()"
-    aria-haspopup="dialog" (click)="calendarOpen.update(open => !open)">
+    aria-haspopup="dialog" (click)="toggleCalendar()">
     <span>{{ displayValue }}</span><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 10h17"/></svg>
   </button>
-  @if (calendarOpen()) {
-    <section class="calendar-panel" role="dialog" [attr.aria-label]="label() + ' calendar'">
+  <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="origin" [cdkConnectedOverlayOpen]="calendarOpen()" [cdkConnectedOverlayPositions]="overlayPositions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayScrollStrategy]="scrollStrategy" [cdkConnectedOverlayHasBackdrop]="true" cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop" (backdropClick)="closeCalendar()" (detach)="closeCalendar()">
+    <section class="calendar-panel" role="dialog" [attr.aria-label]="label() + ' calendar'" (keydown.escape)="closeCalendar()">
       <header class="calendar-header"><button type="button" class="month-nav" aria-label="Previous month" (click)="changeMonth(-1)">‹</button><strong aria-live="polite">{{ monthLabel() }}</strong><button type="button" class="month-nav" aria-label="Next month" (click)="changeMonth(1)">›</button></header>
       <div class="calendar-grid" role="grid" [attr.aria-label]="monthLabel()">
         @for (day of weekDays; track day) { <span class="weekday" role="columnheader">{{ day }}</span> }
@@ -16,5 +16,5 @@
       </div>
       <footer><button type="button" class="today-action" (click)="selectDate(today)">Today</button></footer>
     </section>
-  }
+  </ng-template>
 </div>

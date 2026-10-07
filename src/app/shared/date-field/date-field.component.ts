@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { Overlay, OverlayModule, ConnectedPosition } from '@angular/cdk/overlay';
 
 @Component({
   selector: 'ts-date-field',
   standalone: true,
-  imports: [],
+  imports: [OverlayModule],
   templateUrl: './date-field.component.html',
   styleUrl: './date-field.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -14,6 +15,11 @@ export class DateFieldComponent implements ControlValueAccessor {
   readonly label = input('Choose date');
   readonly inputId = input('ledger-date');
   private readonly host = inject(ElementRef<HTMLElement>);
+  readonly scrollStrategy = inject(Overlay).scrollStrategies.reposition();
+  readonly overlayPositions: ConnectedPosition[] = [
+    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 6 },
+    { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -6 },
+  ];
   value: string | null = null;
   disabled = false;
   readonly calendarOpen = signal(false);
@@ -58,6 +64,9 @@ export class DateFieldComponent implements ControlValueAccessor {
     setTimeout(() => (this.host.nativeElement.querySelector('.date-trigger') as HTMLButtonElement | null)?.focus());
   }
 
+  toggleCalendar(): void { if (!this.disabled) this.calendarOpen.update((open) => !open); }
+  closeCalendar(): void { this.calendarOpen.set(false); }
+
   changeMonth(offset: number): void {
     const month = this.visibleMonth();
     this.visibleMonth.set(new Date(month.getFullYear(), month.getMonth() + offset, 1));
@@ -68,10 +77,10 @@ export class DateFieldComponent implements ControlValueAccessor {
   trackCell(index: number, date: Date | null): string { return date ? this.toIsoDate(date) : `empty-${index}`; }
 
   @HostListener('document:click', ['$event']) closeOnOutsideClick(event: MouseEvent): void {
-    if (!this.host.nativeElement.contains(event.target as Node)) this.calendarOpen.set(false);
+    if (!this.host.nativeElement.contains(event.target as Node) && !(event.target as HTMLElement).closest('.cdk-overlay-pane')) this.calendarOpen.set(false);
   }
 
-  @HostListener('keydown.escape') closeOnEscape(): void { this.calendarOpen.set(false); }
+  @HostListener('keydown.escape') closeOnEscape(): void { this.closeCalendar(); }
 
   @HostListener('keydown', ['$event']) moveWithArrowKeys(event: KeyboardEvent): void {
     const dayButton = (event.target as HTMLElement).closest<HTMLButtonElement>('.calendar-day');

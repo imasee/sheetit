@@ -40,6 +40,7 @@ export class TransactionDialogComponent {
     amount: new FormControl<number | null>(null, { validators: [Validators.required, Validators.min(0.01)] }),
     currency: this.fb.control<Currency>(this.store.defaultCurrency(), Validators.required),
     date: this.fb.control(new Date().toISOString().slice(0, 10), Validators.required),
+    description: this.fb.control('', Validators.maxLength(200)),
     category: this.fb.control(''),
     notes: this.fb.control(''),
   });
@@ -78,7 +79,7 @@ export class TransactionDialogComponent {
       const txn: Transaction = {
         txId: crypto.randomUUID(), date: values.date, entityId,
         type: values.type, amount: Number(values.amount), currency: values.currency,
-        category: values.category.trim(), notes: values.notes.trim(), status: 'Pending', createdAt: new Date().toISOString(),
+        description: values.description.trim(), category: values.category.trim(), notes: values.notes.trim(), status: 'Pending', createdAt: new Date().toISOString(),
       };
       await this.store.addTransaction(txn);
       this.dialogRef.close(txn);

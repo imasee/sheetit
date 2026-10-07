@@ -4,7 +4,7 @@
 .date-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .date-trigger svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .date-trigger:disabled { cursor: not-allowed; opacity: .65; }
-.calendar-panel { position: relative; z-index: 2; width: min(100%, 310px); margin-top: 8px; padding: 12px; border: 1px solid var(--theme-border-strong); border-radius: 12px; color: var(--text-primary); background: var(--theme-surface-raised); box-shadow: 0 12px 28px color-mix(in srgb, var(--theme-bg) 35%, transparent); }
+.calendar-panel { width: min(310px, calc(100vw - 24px)); padding: 12px; border: 1px solid var(--theme-border-strong); border-radius: 12px; color: var(--text-primary); background: var(--theme-surface-raised); box-shadow: 0 12px 28px color-mix(in srgb, var(--theme-bg) 35%, transparent); }
 .calendar-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 10px; }
 .calendar-header strong { color: var(--text-primary); font-size: 13px; font-weight: 700; }
 .month-nav { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--theme-border); border-radius: 8px; color: var(--text-primary); background: var(--theme-surface); font-size: 24px; line-height: 1; cursor: pointer; }

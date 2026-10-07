@@ -27,6 +27,7 @@
         }
       </section>
     } @else { <label><span class="field-label">Category</span><input class="ts-control" formControlName="category" placeholder="e.g. Groceries" /></label> }
+    <label><span class="field-label">Description <span class="field-optional">Optional</span></span><input class="ts-control" formControlName="description" maxlength="200" placeholder="What was this transaction for?" /></label>
     <div class="amount-currency-fields">
       <label><span class="field-label">Amount</span><input class="ts-control" formControlName="amount" type="text" tsThousandsSeparator inputmode="decimal" autocomplete="off" placeholder="0.00" />@if (form.controls.amount.touched && form.controls.amount.invalid) { <span class="field-error">Enter an amount greater than zero.</span> }</label>
       <label><span class="field-label">Currency</span><select class="ts-control" formControlName="currency">@for (currency of currencies; track currency) { <option [value]="currency">{{ currency }}</option> }</select></label>

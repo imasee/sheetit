@@ -7,11 +7,11 @@ import { CURRENCIES, Currency, LedgerImportBundle, Payment, PaymentDirection, Pe
 
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
 const PEOPLE_RANGE = 'People!A2:F';
-const TRANSACTIONS_RANGE = 'Transactions!A2:J';
+const TRANSACTIONS_RANGE = 'Transactions!A2:K';
 const PAYMENTS_RANGE = 'Payments!A2:I';
 const SETTINGS_RANGE = 'Settings!A2:B';
 const PEOPLE_HEADERS = ['EntityId', 'Name', 'Phone', 'Email', 'Notes', 'Status'];
-const TRANSACTION_HEADERS = ['TxId', 'Date', 'EntityId', 'Type', 'Amount', 'Currency', 'Category', 'Notes', 'Status', 'CreatedAt'];
+const TRANSACTION_HEADERS = ['TxId', 'Date', 'EntityId', 'Type', 'Amount', 'Currency', 'Category', 'Notes', 'Status', 'CreatedAt', 'Description'];
 const PAYMENT_HEADERS = ['PaymentId', 'TxId', 'Date', 'Direction', 'Amount', 'Currency', 'Notes', 'Status', 'CreatedAt'];
 const SETTINGS_HEADERS = ['Setting', 'Value'];
 const DEFAULT_CURRENCY_KEY = 'defaultCurrency';
@@ -47,7 +47,7 @@ export class SheetsService {
       if (status && !this.isStatus(status)) throw new Error(`Transactions row ${rowNumber} has an unsupported status: ${status}.`);
       return {
         txId: this.cell(row, 0), date: this.cell(row, 1), entityId: this.cell(row, 2),
-        type, amount, currency, category: this.cell(row, 6), notes: this.cell(row, 7),
+        type, amount, currency, category: this.cell(row, 6), notes: this.cell(row, 7), description: this.cell(row, 10),
         status: this.isStatus(status) ? status : 'Pending', createdAt: this.cell(row, 9),
       };
     });
@@ -93,7 +93,7 @@ export class SheetsService {
 
   async appendTransaction(txn: Transaction): Promise<void> {
     const row = [[txn.txId, txn.date, txn.entityId, txn.type, txn.amount, txn.currency,
-      txn.category, txn.notes, txn.status, txn.createdAt]];
+      txn.category, txn.notes, txn.status, txn.createdAt, txn.description]];
     await firstValueFrom(this.http.post(
       `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(TRANSACTIONS_RANGE)}:append`,
       { values: row },
@@ -140,6 +140,18 @@ export class SheetsService {
     ));
   }
 
+  async updateTransaction(transaction: Transaction): Promise<void> {
+    const rows = await this.getValues(TRANSACTIONS_RANGE);
+    const rowIndex = rows.findIndex((row) => this.cell(row, 0) === transaction.txId);
+    if (rowIndex < 0) throw new Error('This transaction is no longer in the selected sheet. Sync and try again.');
+    const rowNumber = rowIndex + 2;
+    await firstValueFrom(this.http.put(
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(`Transactions!B${rowNumber}:K${rowNumber}`)}`,
+      { values: [[transaction.date, transaction.entityId, transaction.type, transaction.amount, transaction.currency, transaction.category, transaction.notes, transaction.status, transaction.createdAt, transaction.description]] },
+      { headers: await this.headers(), params: { valueInputOption: 'RAW' } },
+    ));
+  }
+
   async deletePerson(entityId: string): Promise<void> {
     const [people, transactions] = await Promise.all([this.getValues(PEOPLE_RANGE), this.getValues(TRANSACTIONS_RANGE)]);
     if (transactions.some((row) => this.cell(row, 2) === entityId)) {
@@ -167,13 +179,13 @@ export class SheetsService {
       }, { headers: tokenHeaders }));
     }
     const current = await this.getValues('People!A1:F1').catch(() => []);
-    const txnHeaders = await this.getValues('Transactions!A1:J1').catch(() => []);
+    const txnHeaders = await this.getValues('Transactions!A1:K1').catch(() => []);
     const paymentHeaders = await this.getValues('Payments!A1:I1').catch(() => []);
     const settingHeaders = await this.getValues('Settings!A1:B1').catch(() => []);
     const settingRows = await this.getValues(SETTINGS_RANGE).catch(() => []);
     const requests: { range: string; values: string[][] }[] = [];
     this.addPeopleHeaderRequest(current, requests);
-    this.addHeaderRequest(txnHeaders, 'Transactions!A1:J1', TRANSACTION_HEADERS, requests);
+    this.addTransactionHeaderRequest(txnHeaders, requests);
     this.addHeaderRequest(paymentHeaders, 'Payments!A1:I1', PAYMENT_HEADERS, requests);
     this.addHeaderRequest(settingHeaders, 'Settings!A1:B1', SETTINGS_HEADERS, requests);
     if (requests.length) {
@@ -224,8 +236,8 @@ export class SheetsService {
       values: bundle.people.map((person) => [person.entityId, person.name, person.phone, person.email, person.notes, person.status]),
     });
     if (bundle.transactions.length) data.push({
-      range: `Transactions!A${transactionRows.length + 2}:J`,
-      values: bundle.transactions.map((txn) => [txn.txId, txn.date, txn.entityId, txn.type, txn.amount, txn.currency, txn.category, txn.notes, txn.status, txn.createdAt]),
+      range: `Transactions!A${transactionRows.length + 2}:K`,
+      values: bundle.transactions.map((txn) => [txn.txId, txn.date, txn.entityId, txn.type, txn.amount, txn.currency, txn.category, txn.notes, txn.status, txn.createdAt, txn.description]),
     });
     if (bundle.payments.length) data.push({
       range: `Payments!A${paymentRows.length + 2}:I`,
@@ -328,6 +340,18 @@ export class SheetsService {
     const statusHeader = rows[0]?.[5]?.trim();
     if (!statusHeader) requests.push({ range: 'People!F1', values: [['Status']] });
     else if (statusHeader !== 'Status') throw new Error('People has unexpected column headers. Use the SheetFi schema listed in Settings.');
+  }
+  private addTransactionHeaderRequest(rows: string[][], requests: { range: string; values: string[][] }[]): void {
+    if (!rows.length || !rows[0]?.some((cell) => cell.trim())) {
+      requests.push({ range: 'Transactions!A1:K1', values: [TRANSACTION_HEADERS] });
+      return;
+    }
+    if (TRANSACTION_HEADERS.slice(0, 10).some((header, index) => rows[0]?.[index]?.trim() !== header)) {
+      throw new Error('Transactions has unexpected column headers. Use the SheetFi schema listed in Settings.');
+    }
+    const descriptionHeader = rows[0]?.[10]?.trim();
+    if (!descriptionHeader) requests.push({ range: 'Transactions!K1', values: [['Description']] });
+    else if (descriptionHeader !== 'Description') throw new Error('Transactions has unexpected column headers. Use the SheetFi schema listed in Settings.');
   }
   private isCurrency(value: string): value is Currency { return (CURRENCIES as readonly string[]).includes(value); }
   private isTransactionType(value: string): value is Transaction['type'] { return (TRANSACTION_TYPES as readonly string[]).includes(value); }
