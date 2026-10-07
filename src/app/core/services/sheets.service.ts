@@ -149,7 +149,7 @@ export class SheetsService {
 
   private requireSpreadsheetId(): string {
     const spreadsheetId = this.workspace.active()?.id;
-    if (!spreadsheetId) throw new Error('Choose a Sheetit spreadsheet before syncing.');
+    if (!spreadsheetId) throw new Error('Choose a SheetFi spreadsheet before syncing.');
     return spreadsheetId;
   }
 
@@ -165,7 +165,7 @@ export class SheetsService {
       return;
     }
     if (expected.some((header, index) => rows[0]?.[index]?.trim() !== header)) {
-      throw new Error(`${range.split('!')[0]} has unexpected column headers. Use the Sheetit schema listed in Settings.`);
+      throw new Error(`${range.split('!')[0]} has unexpected column headers. Use the SheetFi schema listed in Settings.`);
     }
   }
   private isCurrency(value: string): value is Currency { return (CURRENCIES as readonly string[]).includes(value); }

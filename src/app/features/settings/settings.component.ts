@@ -41,7 +41,7 @@ export class SettingsComponent {
         this.workspace.select(found[0]);
         await this.syncSelected();
       } else if (!this.workspace.active()) {
-        this.message.set(`Found ${found.length} Sheetit spreadsheets. Choose one in the spreadsheet selector.`);
+        this.message.set(`Found ${found.length} SheetFi spreadsheets. Choose one in the spreadsheet selector.`);
       } else {
         await this.syncSelected();
       }

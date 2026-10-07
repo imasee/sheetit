@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 const file = new URL('../src/environments/environment.prod.ts', import.meta.url);
 const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
 const placeholder = 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
-const appName = process.env.APP_NAME?.trim() || 'Sheetit';
+const appName = process.env.APP_NAME?.trim() || 'SheetFi';
 const namingPattern = process.env.SPREADSHEET_NAMING_PATTERN?.trim() || '[sheetit]-{name}-{version}';
 const defaultSpreadsheetName = process.env.DEFAULT_SPREADSHEET_NAME?.trim() || 'Personal Finance';
 
