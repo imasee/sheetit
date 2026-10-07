@@ -34,8 +34,8 @@ jobs:
           APP_NAME: ${{ vars.APP_NAME }}
           SPREADSHEET_NAMING_PATTERN: ${{ vars.SPREADSHEET_NAMING_PATTERN }}
           DEFAULT_SPREADSHEET_NAME: ${{ vars.DEFAULT_SPREADSHEET_NAME }}
-      - name: Build Angular app for project Pages URL
-        run: npm run build -- --configuration production --base-href /sheetit/
+      - name: Build Angular app for the custom domain
+        run: npm run build -- --configuration production --base-href /
       - name: Add SPA fallback page
         run: cp dist/sheetit/browser/index.html dist/sheetit/browser/404.html
       - name: Configure GitHub Pages
