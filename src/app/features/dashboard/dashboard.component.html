@@ -7,6 +7,13 @@
 
 @if (syncError() || workspace.discoveryError() || store.error(); as error) { <div class="error-banner" role="alert"><mat-icon aria-hidden="true">error_outline</mat-icon><div><strong>Ledger connection issue</strong><span>{{ error }}</span><a routerLink="/settings">Review connection settings</a></div></div> }
 
+@if (clearedPeerTransactionCount()) {
+  <section class="status-review-banner" aria-label="Cleared transactions review">
+    <div><strong>{{ clearedPeerTransactionCount() }} peer transaction{{ clearedPeerTransactionCount() === 1 ? '' : 's' }} marked cleared</strong><span>Cleared transactions are hidden from balances. If these were created before new entries defaulted to Pending, you can reopen them together.</span></div>
+    <button class="restore-status-action" type="button" (click)="restoreClearedPeerEntries()" [disabled]="store.syncStatus() === 'syncing'">Reopen as pending</button>
+  </section>
+}
+
 <section class="summary-section" aria-labelledby="currency-summary-title">
   <div class="section-heading"><div><h2 id="currency-summary-title">Ledger summary</h2><p>Totals stay separate by currency. No currency conversion is applied.</p></div><span class="section-meta">{{ currencies().length }} currencies</span></div>
   <div class="summary-grid">
