@@ -107,6 +107,23 @@ export const TrackseeStore = signalStore(
       await sheets.updateTransactionStatus(txId, status);
       patchState(store, (state) => ({ transactions: state.transactions.map((item) => item.txId === txId ? { ...item, status } : item), lastSyncedAt: new Date().toISOString() }));
     },
+    async reopenClearedPeerTransactions(): Promise<number> {
+      const transactions = store.transactions().filter((item) => item.status === 'Cleared' && item.entityId && item.type !== 'Expense');
+      if (!transactions.length) return 0;
+      patchState(store, { syncStatus: 'syncing', error: null });
+      try {
+        await sheets.updateTransactionsStatus(transactions.map((item) => item.txId), 'Pending');
+        const transactionIds = new Set(transactions.map((item) => item.txId));
+        patchState(store, (state) => ({
+          transactions: state.transactions.map((item) => transactionIds.has(item.txId) ? { ...item, status: 'Pending' as const } : item),
+          syncStatus: 'ready' as const, error: null, lastSyncedAt: new Date().toISOString(),
+        }));
+        return transactions.length;
+      } catch (error) {
+        patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to reopen cleared transactions.' });
+        throw error;
+      }
+    },
     async setDefaultCurrency(defaultCurrency: Currency): Promise<void> {
       await sheets.updateDefaultCurrency(defaultCurrency);
       patchState(store, { defaultCurrency });

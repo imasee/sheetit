@@ -26,6 +26,7 @@ export class DashboardComponent {
     const used = new Set(this.store.transactions().map((transaction) => transaction.currency));
     return CURRENCIES.filter((currency) => used.has(currency));
   });
+  readonly clearedPeerTransactionCount = computed(() => this.store.transactions().filter((txn) => txn.status === 'Cleared' && txn.entityId && txn.type !== 'Expense').length);
   readonly syncing = signal(false);
   readonly syncError = signal<string | null>(null);
   private readonly announcer = inject(LiveAnnouncer);
@@ -71,6 +72,23 @@ export class DashboardComponent {
       await this.announcer.announce('Ledger sync failed. Check the connection details in Settings.', 'assertive');
     } finally {
       this.syncing.set(false);
+    }
+  }
+
+  async restoreClearedPeerEntries(): Promise<void> {
+    const count = this.clearedPeerTransactionCount();
+    if (!count || this.store.syncStatus() === 'syncing') return;
+    const confirmed = window.confirm(`Reopen all ${count} cleared peer transactions as Pending? They will count toward balances again, less any recorded payments. This also reopens entries you previously cleared manually.`);
+    if (!confirmed) return;
+    try {
+      const updated = await this.store.reopenClearedPeerTransactions();
+      this.toast.show(`${updated} peer transactions are now pending and included in balances.`, 'success');
+      await this.announcer.announce(`${updated} peer transactions reopened as pending.`, 'polite');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not restore the cleared peer entries.';
+      this.syncError.set(message);
+      this.toast.show(message, 'error');
+      await this.announcer.announce(message, 'assertive');
     }
   }
 

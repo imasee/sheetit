@@ -224,6 +224,20 @@ export class SheetsService {
     ));
   }
 
+  async updateTransactionsStatus(txIds: string[], status: TransactionStatus): Promise<void> {
+    if (!txIds.length) return;
+    const rows = await this.getValues(TRANSACTIONS_RANGE);
+    const rowById = new Map(rows.map((row, index) => [this.cell(row, 0), index + 2]));
+    const missing = txIds.filter((txId) => !rowById.has(txId));
+    if (missing.length) throw new Error('Some transactions are no longer in the selected sheet. Sync and try again.');
+    const data = txIds.map((txId) => ({ range: `Transactions!I${rowById.get(txId)}:I${rowById.get(txId)}`, values: [[status]] }));
+    await firstValueFrom(this.http.post(
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values:batchUpdate`,
+      { valueInputOption: 'RAW', data },
+      { headers: await this.headers() },
+    ));
+  }
+
   private async appendSetting(key: string, value: string): Promise<void> {
     await firstValueFrom(this.http.post(
       `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(SETTINGS_RANGE)}:append`,
