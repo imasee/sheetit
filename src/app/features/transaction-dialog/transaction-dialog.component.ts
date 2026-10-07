@@ -30,7 +30,7 @@ export class TransactionDialogComponent {
     newPersonEmail: this.fb.control('', Validators.email),
     newPersonNotes: this.fb.control(''),
     amount: new FormControl<number | null>(null, { validators: [Validators.required, Validators.min(0.01)] }),
-    currency: this.fb.control<Currency>('INR', Validators.required),
+    currency: this.fb.control<Currency>(this.store.defaultCurrency(), Validators.required),
     date: this.fb.control(new Date().toISOString().slice(0, 10), Validators.required),
     category: this.fb.control(''),
     notes: this.fb.control(''),

@@ -51,9 +51,9 @@ export class GoogleIdentityService {
   readonly currentUser = signal<GoogleUser | null>(null);
   private tokenExpiresAt = this.readExpiry();
 
-  async requestAccessToken(): Promise<string> {
+  async requestAccessToken(prompt?: 'consent' | 'select_account'): Promise<string> {
     const existingToken = this.accessToken();
-    if (existingToken && this.hasUsableToken()) return existingToken;
+    if (!prompt && existingToken && this.hasUsableToken()) return existingToken;
     if (!this.isConfigured()) throw new Error('Add your Google OAuth client ID in src/environments/environment.ts.');
     if (!window.google?.accounts.oauth2) throw new Error('Google Identity Services has not loaded. Check your network connection and reload.');
 
@@ -73,12 +73,20 @@ export class GoogleIdentityService {
         },
         error_callback: () => reject(new Error('Google sign-in was closed or could not be completed.')),
       });
-      client.requestAccessToken({ prompt: this.hasStoredGrant() ? '' : 'consent' });
+      client.requestAccessToken({ prompt: prompt ?? (this.hasStoredGrant() ? '' : 'consent') });
     });
   }
 
   async signIn(): Promise<GoogleUser> {
-    await this.requestAccessToken();
+    return this.authenticate();
+  }
+
+  async signUp(): Promise<GoogleUser> {
+    return this.authenticate('select_account');
+  }
+
+  private async authenticate(prompt?: 'consent' | 'select_account'): Promise<GoogleUser> {
+    await this.requestAccessToken(prompt);
     const validation = await this.validateAccessToken();
     if (validation !== 'valid' || !this.currentUser()) {
       if (validation === 'invalid') this.clearSession();

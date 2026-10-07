@@ -59,6 +59,29 @@ export interface CurrencySummary {
 
 export type GlobalCurrencySummary = Record<Currency, CurrencySummary>;
 
+export interface LedgerPreferences {
+  defaultCurrency: Currency;
+}
+
+export interface LedgerTransferRecord {
+  transaction: Transaction;
+  person: Person | null;
+  payments: Payment[];
+}
+
+export interface LedgerTransferPayload {
+  format: 'sheetfi-ledger-export';
+  version: 1;
+  exportedAt: string;
+  records: LedgerTransferRecord[];
+}
+
+export interface LedgerImportBundle {
+  people: Person[];
+  transactions: Transaction[];
+  payments: Payment[];
+}
+
 export interface LedgerSnapshot {
   people: Person[];
   transactions: Transaction[];

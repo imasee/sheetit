@@ -3,15 +3,18 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { GoogleIdentityService } from '../google/google-identity.service';
 import { SpreadsheetWorkspaceService } from './spreadsheet-workspace.service';
-import { CURRENCIES, Currency, Payment, PaymentDirection, Person, Transaction, TRANSACTION_TYPES, TransactionStatus } from '../models/tracksee.models';
+import { CURRENCIES, Currency, LedgerImportBundle, Payment, PaymentDirection, Person, Transaction, TRANSACTION_TYPES, TransactionStatus } from '../models/tracksee.models';
 
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
 const PEOPLE_RANGE = 'People!A2:E';
 const TRANSACTIONS_RANGE = 'Transactions!A2:J';
 const PAYMENTS_RANGE = 'Payments!A2:I';
+const SETTINGS_RANGE = 'Settings!A2:B';
 const PEOPLE_HEADERS = ['EntityId', 'Name', 'Phone', 'Email', 'Notes'];
 const TRANSACTION_HEADERS = ['TxId', 'Date', 'EntityId', 'Type', 'Amount', 'Currency', 'Category', 'Notes', 'Status', 'CreatedAt'];
 const PAYMENT_HEADERS = ['PaymentId', 'TxId', 'Date', 'Direction', 'Amount', 'Currency', 'Notes', 'Status', 'CreatedAt'];
+const SETTINGS_HEADERS = ['Setting', 'Value'];
+const DEFAULT_CURRENCY_KEY = 'defaultCurrency';
 
 @Injectable({ providedIn: 'root' })
 export class SheetsService {
@@ -62,6 +65,30 @@ export class SheetsService {
       }
       return { paymentId: this.cell(row, 0), txId: this.cell(row, 1), date: this.cell(row, 2), direction: direction as PaymentDirection, amount, currency, notes: this.cell(row, 6), status, createdAt: this.cell(row, 8) };
     });
+  }
+
+  async fetchDefaultCurrency(): Promise<Currency> {
+    const rows = await this.getValues(SETTINGS_RANGE);
+    const value = rows.find((row) => this.cell(row, 0) === DEFAULT_CURRENCY_KEY)?.[1]?.trim() || 'INR';
+    if (!this.isCurrency(value)) throw new Error('Settings defaultCurrency must be CAD, INR, or USD.');
+    return value;
+  }
+
+  async updateDefaultCurrency(currency: Currency): Promise<void> {
+    const rows = await this.getValues(SETTINGS_RANGE);
+    const rowIndex = rows.findIndex((row) => this.cell(row, 0) === DEFAULT_CURRENCY_KEY);
+    if (rowIndex < 0) {
+      await this.appendSetting(DEFAULT_CURRENCY_KEY, currency);
+      return;
+    }
+    await this.updateSettingValue(rowIndex + 2, currency);
+  }
+
+  private async updateSettingValue(rowNumber: number, value: string): Promise<void> {
+    await firstValueFrom(this.http.put(
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(`Settings!B${rowNumber}:B${rowNumber}`)}`,
+      { values: [[value]] }, { headers: await this.headers(), params: { valueInputOption: 'RAW' } },
+    ));
   }
 
   async appendTransaction(txn: Transaction): Promise<void> {
@@ -117,20 +144,101 @@ export class SheetsService {
     const id = this.requireSpreadsheetId();
     const tokenHeaders = await this.headers();
     const metadata = await firstValueFrom(this.http.get<{ sheets?: { properties?: { title?: string } }[] }>(`${SHEETS_API}/${id}`, { headers: tokenHeaders, params: { fields: 'sheets.properties.title' } }));
-    if (!(metadata.sheets ?? []).some((sheet) => sheet.properties?.title === 'Payments')) {
-      await firstValueFrom(this.http.post(`${SHEETS_API}/${id}:batchUpdate`, { requests: [{ addSheet: { properties: { title: 'Payments', gridProperties: { frozenRowCount: 1 } } } }] }, { headers: tokenHeaders }));
+    const existingTabs = new Set((metadata.sheets ?? []).map((sheet) => sheet.properties?.title));
+    const missingTabs = ['Payments', 'Settings'].filter((title) => !existingTabs.has(title));
+    if (missingTabs.length) {
+      await firstValueFrom(this.http.post(`${SHEETS_API}/${id}:batchUpdate`, {
+        requests: missingTabs.map((title) => ({ addSheet: { properties: { title, gridProperties: { frozenRowCount: 1 } } } })),
+      }, { headers: tokenHeaders }));
     }
     const current = await this.getValues('People!A1:E1').catch(() => []);
     const txnHeaders = await this.getValues('Transactions!A1:J1').catch(() => []);
     const paymentHeaders = await this.getValues('Payments!A1:I1').catch(() => []);
+    const settingHeaders = await this.getValues('Settings!A1:B1').catch(() => []);
+    const settingRows = await this.getValues(SETTINGS_RANGE).catch(() => []);
     const requests: { range: string; values: string[][] }[] = [];
     this.addHeaderRequest(current, 'People!A1:E1', PEOPLE_HEADERS, requests);
     this.addHeaderRequest(txnHeaders, 'Transactions!A1:J1', TRANSACTION_HEADERS, requests);
     this.addHeaderRequest(paymentHeaders, 'Payments!A1:I1', PAYMENT_HEADERS, requests);
+    this.addHeaderRequest(settingHeaders, 'Settings!A1:B1', SETTINGS_HEADERS, requests);
     if (requests.length) {
       await firstValueFrom(this.http.post(`${SHEETS_API}/${this.requireSpreadsheetId()}/values:batchUpdate`, {
         valueInputOption: 'RAW', data: requests,
       }, { headers: await this.headers() }));
+    }
+    const defaultCurrencyRow = settingRows.findIndex((row) => this.cell(row, 0) === DEFAULT_CURRENCY_KEY);
+    if (defaultCurrencyRow < 0) {
+      await this.appendSetting(DEFAULT_CURRENCY_KEY, 'INR');
+    } else if (!this.cell(settingRows[defaultCurrencyRow], 1)) {
+      await this.updateSettingValue(defaultCurrencyRow + 2, 'INR');
+    }
+  }
+
+  async importJoinedLedger(bundle: LedgerImportBundle): Promise<void> {
+    const [peopleRows, transactionRows, paymentRows] = await Promise.all([
+      this.getValues('People!A2:E'),
+      this.getValues(TRANSACTIONS_RANGE),
+      this.getValues(PAYMENTS_RANGE),
+    ]);
+    const existingPeople = new Set(peopleRows.map((row) => this.cell(row, 0)).filter(Boolean));
+    const existingTransactions = new Set(transactionRows.map((row) => this.cell(row, 0)).filter(Boolean));
+    const existingPayments = new Set(paymentRows.map((row) => this.cell(row, 0)).filter(Boolean));
+    this.assertNoDuplicateIds('people', bundle.people.map((item) => item.entityId), existingPeople);
+    this.assertNoDuplicateIds('transactions', bundle.transactions.map((item) => item.txId), existingTransactions);
+    this.assertNoDuplicateIds('payments', bundle.payments.map((item) => item.paymentId), existingPayments);
+
+    const peopleIds = new Set([...existingPeople, ...bundle.people.map((item) => item.entityId)]);
+    const transactionById = new Map(bundle.transactions.map((transaction) => [transaction.txId, transaction] as const));
+    for (const transaction of bundle.transactions) {
+      if (transaction.type !== 'Expense' && !peopleIds.has(transaction.entityId)) {
+        throw new Error(`Cannot import transaction ${transaction.txId}: person ${transaction.entityId} is missing.`);
+      }
+    }
+    for (const payment of bundle.payments) {
+      const transaction = transactionById.get(payment.txId);
+      if (!transaction) throw new Error(`Cannot import payment ${payment.paymentId}: transaction ${payment.txId} is missing from the import.`);
+      const expectedDirection = transaction.type === 'Lent_To_Them' ? 'Received' : 'Sent';
+      if (transaction.type === 'Expense' || transaction.currency !== payment.currency || payment.direction !== expectedDirection) {
+        throw new Error(`Cannot import payment ${payment.paymentId}: its direction or currency does not match its transaction.`);
+      }
+    }
+
+    const data: { range: string; values: (string | number)[][] }[] = [];
+    if (bundle.people.length) data.push({
+      range: `People!A${peopleRows.length + 2}:E`,
+      values: bundle.people.map((person) => [person.entityId, person.name, person.phone, person.email, person.notes]),
+    });
+    if (bundle.transactions.length) data.push({
+      range: `Transactions!A${transactionRows.length + 2}:J`,
+      values: bundle.transactions.map((txn) => [txn.txId, txn.date, txn.entityId, txn.type, txn.amount, txn.currency, txn.category, txn.notes, txn.status, txn.createdAt]),
+    });
+    if (bundle.payments.length) data.push({
+      range: `Payments!A${paymentRows.length + 2}:I`,
+      values: bundle.payments.map((payment) => [payment.paymentId, payment.txId, payment.date, payment.direction, payment.amount, payment.currency, payment.notes, payment.status, payment.createdAt]),
+    });
+    if (!data.length) throw new Error('The import contains no ledger records.');
+    await firstValueFrom(this.http.post(
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values:batchUpdate`,
+      { valueInputOption: 'RAW', data },
+      { headers: await this.headers() },
+    ));
+  }
+
+  private async appendSetting(key: string, value: string): Promise<void> {
+    await firstValueFrom(this.http.post(
+      `${SHEETS_API}/${this.requireSpreadsheetId()}/values/${encodeURIComponent(SETTINGS_RANGE)}:append`,
+      { values: [[key, value]] },
+      { headers: await this.headers(), params: { valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS' } },
+    ));
+  }
+
+  private assertNoDuplicateIds(kind: string, importedIds: string[], existingIds: Set<string>): void {
+    const seen = new Set<string>();
+    for (const id of importedIds) {
+      if (!id || seen.has(id) || existingIds.has(id)) {
+        throw new Error(`Import stopped: ${kind} contain a missing or duplicate ID (${id || 'blank'}).`);
+      }
+      seen.add(id);
     }
   }
 

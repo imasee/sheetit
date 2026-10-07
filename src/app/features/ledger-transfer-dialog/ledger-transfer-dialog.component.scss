@@ -1,0 +1,23 @@
+:host { display: block; }
+.transfer-dialog { display: grid; max-height: min(88vh, 820px); color: var(--text-primary); }
+.dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 23px 24px 16px; border-bottom: 1px solid var(--theme-border); }
+.dialog-kicker { color: var(--text-muted); font-size: 9px; font-weight: 700; letter-spacing: 1.2px; }
+.dialog-heading h2 { margin: 7px 0 0; font: 700 21px Manrope, sans-serif; letter-spacing: -.4px; }
+.dialog-heading p { margin: 6px 0 0; color: var(--text-secondary); font-size: 11px; }
+.dialog-close { width: 35px; height: 35px; flex: none; display: grid; place-items: center; border: 1px solid var(--theme-border); border-radius: 8px; color: var(--text-secondary); background: var(--theme-surface-raised); cursor: pointer; }
+.transfer-dialog mat-dialog-content { max-height: calc(88vh - 145px); padding: 17px 24px; }
+.transfer-section { display: grid; gap: 10px; }
+.transfer-section h3 { margin: 0; font: 700 13px Manrope, sans-serif; }
+.transfer-section p { margin: 5px 0 0; color: var(--text-secondary); font-size: 10px; line-height: 1.55; }
+.transfer-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.transfer-actions button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; }
+.transfer-actions mat-icon { width: 17px; height: 17px; font-size: 17px; }
+.transfer-help { color: var(--text-muted) !important; }
+.import-section { margin-top: 20px; padding-top: 17px; border-top: 1px solid var(--theme-border); }
+.import-section label { color: var(--text-secondary); font-size: 10px; font-weight: 600; }
+.import-section textarea { width: 100%; min-height: 150px; resize: vertical; font: 10px/1.5 ui-monospace, Consolas, monospace; }
+.import-preview { color: var(--theme-positive) !important; }
+.transfer-error { color: var(--theme-negative) !important; }
+.transfer-message { color: var(--theme-positive) !important; }
+.transfer-dialog footer { display: flex; justify-content: flex-end; padding: 13px 24px 18px; border-top: 1px solid var(--theme-border); }
+@media (max-width: 520px) { .dialog-heading { padding: 18px 16px 13px; }.transfer-dialog mat-dialog-content { padding: 14px 16px; }.transfer-dialog footer { padding-inline: 16px; } }

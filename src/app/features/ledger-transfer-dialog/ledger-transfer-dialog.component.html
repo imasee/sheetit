@@ -1,0 +1,32 @@
+<section class="transfer-dialog" aria-labelledby="ledger-transfer-title">
+  <header class="dialog-heading">
+    <div><span class="dialog-kicker">LEDGER DATA</span><h2 id="ledger-transfer-title">Import &amp; export</h2><p>{{ workspace.active()?.ledgerName }} · data only, no spreadsheet settings</p></div>
+    <button class="dialog-close" type="button" mat-dialog-close aria-label="Close import and export"><mat-icon>close</mat-icon></button>
+  </header>
+  <mat-dialog-content>
+    <section class="transfer-section" aria-labelledby="export-ledger-title">
+      <div><h3 id="export-ledger-title">Export this spreadsheet</h3><p>Downloads joined transactions and people, including linked payment history.</p></div>
+      <div class="transfer-actions">
+        <button class="ts-button-secondary" type="button" (click)="download('json')" [disabled]="!canExport()"><mat-icon>data_object</mat-icon>Export JSON</button>
+        <button class="ts-button-secondary" type="button" (click)="download('csv')" [disabled]="!canExport()"><mat-icon>table_view</mat-icon>Export CSV</button>
+      </div>
+      @if (!canExport()) { <p class="transfer-help">Sync the selected spreadsheet before exporting.</p> }
+    </section>
+
+    <section class="transfer-section import-section" aria-labelledby="import-ledger-title">
+      <div><h3 id="import-ledger-title">Import from pasted text</h3><p>Paste a SheetFi JSON or CSV export. Use an empty spreadsheet to restore a backup; imports append and won’t overwrite existing rows.</p></div>
+      <label for="ledger-import-text">JSON or CSV data</label>
+      <textarea id="ledger-import-text" class="ts-control" rows="8" [value]="importText()" (input)="onImportText($event)" [disabled]="busy()" placeholder="Paste the exported JSON or CSV here"></textarea>
+      <div class="transfer-actions">
+        <button class="ts-button-secondary" type="button" (click)="inspectImport()" [disabled]="busy() || !importText().trim()"><mat-icon>fact_check</mat-icon>Check import</button>
+        @if (counts(); as summary) {
+          <button class="ts-button-primary" type="button" (click)="importLedger()" [disabled]="busy() || !workspace.active() || !summary.transactions"><mat-icon>{{ busy() ? 'sync' : 'download' }}</mat-icon>{{ busy() ? 'Importing…' : 'Import data' }}</button>
+        }
+      </div>
+      @if (counts(); as summary) { <p class="import-preview" role="status">Ready to import {{ summary.transactions }} transactions, {{ summary.people }} people, and {{ summary.payments }} linked payments. Spreadsheet settings are not included.</p> }
+      @if (error(); as errorText) { <p class="transfer-error" role="alert">{{ errorText }}</p> }
+      @if (message(); as messageText) { <p class="transfer-message" role="status">{{ messageText }}</p> }
+    </section>
+  </mat-dialog-content>
+  <footer><button class="ts-button-secondary" type="button" mat-dialog-close [disabled]="busy()">Close</button></footer>
+</section>

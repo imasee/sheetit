@@ -1,9 +1,9 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
-import { Currency, CURRENCIES, GlobalCurrencySummary, LedgerSnapshot, Payment, Person, PeerPosition, SyncStatus, Transaction, TransactionStatus } from '../models/tracksee.models';
+import { Currency, CURRENCIES, GlobalCurrencySummary, LedgerPreferences, LedgerSnapshot, Payment, Person, PeerPosition, SyncStatus, Transaction, TransactionStatus } from '../models/tracksee.models';
 import { SheetsService } from '../services/sheets.service';
 
-interface TrackseeState extends LedgerSnapshot {
+interface TrackseeState extends LedgerSnapshot, LedgerPreferences {
   syncStatus: SyncStatus;
   error: string | null;
   lastSyncedAt: string | null;
@@ -18,7 +18,7 @@ const emptySummary = (): GlobalCurrencySummary => ({
 
 export const TrackseeStore = signalStore(
   { providedIn: 'root' },
-  withState<TrackseeState>({ people: [], transactions: [], payments: [], syncStatus: 'idle', error: null, lastSyncedAt: null }),
+  withState<TrackseeState>({ people: [], transactions: [], payments: [], defaultCurrency: 'INR', syncStatus: 'idle', error: null, lastSyncedAt: null }),
   withComputed(({ people, transactions, payments }) => {
     const peerBalances = computed<PeerPosition[]>(() => {
       const positions = new Map<string, Record<Currency, number>>();
@@ -67,8 +67,8 @@ export const TrackseeStore = signalStore(
       patchState(store, { syncStatus: 'syncing', error: null });
       try {
         await sheets.ensureSchema();
-        const [people, transactions, payments] = await Promise.all([sheets.fetchPeople(), sheets.fetchTransactions(), sheets.fetchPayments()]);
-        patchState(store, { people, transactions, payments, syncStatus: 'ready', error: null, lastSyncedAt: new Date().toISOString() });
+        const [people, transactions, payments, defaultCurrency] = await Promise.all([sheets.fetchPeople(), sheets.fetchTransactions(), sheets.fetchPayments(), sheets.fetchDefaultCurrency()]);
+        patchState(store, { people, transactions, payments, defaultCurrency, syncStatus: 'ready', error: null, lastSyncedAt: new Date().toISOString() });
       } catch (error) {
         patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to sync the ledger.' });
         throw error;
@@ -107,6 +107,10 @@ export const TrackseeStore = signalStore(
       await sheets.updateTransactionStatus(txId, status);
       patchState(store, (state) => ({ transactions: state.transactions.map((item) => item.txId === txId ? { ...item, status } : item), lastSyncedAt: new Date().toISOString() }));
     },
+    async setDefaultCurrency(defaultCurrency: Currency): Promise<void> {
+      await sheets.updateDefaultCurrency(defaultCurrency);
+      patchState(store, { defaultCurrency });
+    },
     async addPerson(person: Person): Promise<void> {
       patchState(store, { syncStatus: 'syncing', error: null });
       try {
@@ -131,7 +135,7 @@ export const TrackseeStore = signalStore(
       }
     },
     resetLedger(): void {
-      patchState(store, { people: [], transactions: [], payments: [], syncStatus: 'idle', error: null, lastSyncedAt: null });
+      patchState(store, { people: [], transactions: [], payments: [], defaultCurrency: 'INR', syncStatus: 'idle', error: null, lastSyncedAt: null });
     },
     getPerson(entityId: string): Person | undefined { return store.people().find((person) => person.entityId === entityId); },
   })),

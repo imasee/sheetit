@@ -17,17 +17,20 @@ Sheetit is a standalone Angular 21 personal ledger. The browser talks directly t
 
 The default pattern is `[sheetit]-{name}-{version}`. The default name is `Personal Finance`; its first sheet is titled `[sheetit]-Personal Finance-1`. Creating another ledger with the same name increments the version (`-2`, `-3`, and so on). Existing `[tracksee]-...` spreadsheets remain discoverable. The app stores the selected spreadsheet for later visits. No spreadsheet ID is entered in environment configuration.
 
-If no matching spreadsheet exists, Sheetit asks before creating one. **Not now** leaves the dashboard blank. The **New** action in the sidebar opens the same naming dialog at any time. A new file is created with `People`, `Transactions`, and `Payments` tabs; first sync fills the header rows.
+If no matching spreadsheet exists, Sheetit asks before creating one. **Not now** leaves the dashboard blank. The **New** action in the sidebar opens the same naming dialog at any time. A new file is created with `People`, `Transactions`, `Payments`, and `Settings` tabs; first sync fills the header rows and stores the default entry currency in `Settings`.
 
 ## Spreadsheet schema
 
 - `People!A:E`: `EntityId`, `Name`, `Phone`, `Email`, `Notes`
 - `Transactions!A:J`: `TxId`, `Date`, `EntityId`, `Type`, `Amount`, `Currency`, `Category`, `Notes`, `Status`, `CreatedAt`
 - `Payments!A:I`: `PaymentId`, `TxId`, `Date`, `Direction`, `Amount`, `Currency`, `Notes`, `Status`, `CreatedAt`
+- `Settings!A:B`: `Setting`, `Value`; the `defaultCurrency` setting defaults to `INR` and is loaded during sync.
 
 Add people beneath the `People` header using unique entity IDs. Transactions refer to those IDs. Sheetit searches Drive by its current and legacy static prefixes before `{name}` and validates each result against the matching full pattern.
 
 Payments are separate, append-only rows linked to a transaction by `TxId`. Voided transactions remain in the sheet for audit history, and neither they nor their linked payments affect balances.
+
+Use **Settings → Import & export** to download the selected ledger as JSON or CSV. Exports join each transaction with its person and linked payment history; spreadsheet settings are excluded. To restore a backup, select an empty spreadsheet and paste the exported text into the import dialog. Imports append rows and stop if identifiers already exist.
 
 Notes/comments can be entered and viewed in development mode. Production builds hide these values in the app interface; the existing `Notes` columns remain intact in the Sheets schema.
 

@@ -58,8 +58,17 @@
         </div>
       </div>
     </header>
-    <main id="main-content" class="page-content"><router-outlet /></main>
+    <main id="main-content" class="page-content" [attr.aria-busy]="appBusy()"><router-outlet /></main>
   </div>
 
   <button class="mobile-create" type="button" (click)="openNewTransaction()" [disabled]="!workspace.active()" aria-label="Add transaction"><mat-icon>add</mat-icon></button>
+  @if (appBusy()) {
+    <div class="app-loading-overlay" role="status" aria-live="polite" aria-atomic="true">
+      <div class="app-loading-panel">
+        <span class="app-loading-spinner" aria-hidden="true"></span>
+        <strong>{{ appBusyMessage() }}</strong>
+        <span class="app-loading-detail">Please wait while your workspace is updated.</span>
+      </div>
+    </div>
+  }
 </div>
