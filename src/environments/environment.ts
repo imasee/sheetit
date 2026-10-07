@@ -2,7 +2,7 @@
 export const environment = {
   production: false,
   showLocalComments: true,
-  appName: 'Sheetit',
+  appName: 'SheetFi',
   googleClientId: 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com',
   spreadsheetNamingPattern: '[sheetit]-{name}-{version}',
   defaultSpreadsheetName: 'Personal Finance',

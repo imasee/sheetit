@@ -75,7 +75,7 @@ export class AppComponent implements OnInit {
       }
       if (!this.workspace.active() && found.length === 1) this.workspace.select(found[0]);
       if (!this.workspace.active()) {
-        this.connectionError.set(`Found ${found.length} Sheetit spreadsheets. Select one above.`);
+        this.connectionError.set(`Found ${found.length} SheetFi spreadsheets. Select one above.`);
         return;
       }
       await this.syncSelected();
