@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { MatDialog } from '@angular/material/dialog';
@@ -19,7 +19,7 @@ import { ToastService } from '../../core/services/toast.service';
   templateUrl: './dashboard.component.html', styleUrl: './dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent {
   readonly store = inject(TrackseeStore);
   readonly workspace = inject(SpreadsheetWorkspaceService);
   readonly currencies = computed(() => {
@@ -32,12 +32,8 @@ export class DashboardComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly dialog = inject(MatDialog);
 
-  ngOnInit(): void {
-    if (this.workspace.active() && this.store.syncStatus() === 'idle') void this.syncLedger();
-  }
-
   async syncLedger(): Promise<void> {
-    if (this.syncing()) return;
+    if (this.syncing() || this.store.syncStatus() === 'syncing') return;
     this.syncing.set(true);
     this.syncError.set(null);
     try {

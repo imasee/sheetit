@@ -9,7 +9,9 @@
     <section class="spreadsheet-card" aria-label="Active spreadsheet">
       <div class="spreadsheet-card-label"><mat-icon aria-hidden="true">table_chart</mat-icon><span>SPREADSHEET</span></div>
       @if (workspace.active(); as activeSpreadsheet) { <strong class="spreadsheet-name" [title]="activeSpreadsheet.title">{{ activeSpreadsheet.ledgerName }} <span>v{{ activeSpreadsheet.version }}</span></strong> }
+      @else if (connectionBusy() && workspace.discoveryState() === 'loading') { <span class="spreadsheet-empty">Searching Google Drive…</span> }
       @else { <span class="spreadsheet-empty">No spreadsheet selected</span> }
+      @if (connectionBusy() && workspace.discoveryState() === 'loading') { <p class="spreadsheet-loading" role="status"><mat-icon class="spin" aria-hidden="true">sync</mat-icon>Finding your spreadsheets…</p> }
       @if (workspace.available().length) {
         <label class="visually-hidden" for="spreadsheet-choice">Select spreadsheet</label>
         <select id="spreadsheet-choice" class="ts-control" [value]="workspace.active()?.id ?? ''" (change)="selectSpreadsheet($any($event.target).value)" [disabled]="connectionBusy()">

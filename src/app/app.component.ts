@@ -43,7 +43,7 @@ export class AppComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    if (this.workspace.active() && this.store.syncStatus() === 'idle') void this.syncSelected();
+    if (this.store.syncStatus() === 'idle') void this.connectOrSync();
   }
 
   toggleUserMenu(): void {

@@ -1,7 +1,7 @@
 <section class="page-heading">
   <div><div class="eyebrow">YOUR MONEY, IN CONTEXT</div><h1>Overview</h1><p class="page-subtitle">A clear picture of your personal ledger.</p></div>
-  <button class="sync-button" type="button" [disabled]="syncing()" (click)="syncLedger()" aria-label="Connect or sync Google Sheets">
-    <mat-icon aria-hidden="true" [class.spin]="syncing()">{{ syncing() ? 'sync' : workspace.active() ? 'sync' : 'link' }}</mat-icon>{{ syncing() ? 'Syncing' : workspace.active() ? 'Sync ledger' : 'Connect Google' }}
+  <button class="sync-button" type="button" [disabled]="syncing() || store.syncStatus() === 'syncing' || workspace.discoveryState() === 'loading'" (click)="syncLedger()" aria-label="Connect or sync Google Sheets">
+    <mat-icon aria-hidden="true" [class.spin]="syncing() || store.syncStatus() === 'syncing' || workspace.discoveryState() === 'loading'">{{ syncing() || store.syncStatus() === 'syncing' || workspace.discoveryState() === 'loading' ? 'sync' : workspace.active() ? 'sync' : 'link' }}</mat-icon>{{ workspace.discoveryState() === 'loading' ? 'Finding spreadsheets…' : syncing() || store.syncStatus() === 'syncing' ? 'Syncing…' : workspace.active() ? 'Sync ledger' : 'Connect Google' }}
   </button>
 </section>
 
