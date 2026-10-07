@@ -16,6 +16,8 @@ export class PeopleComponent {
   readonly workspace = inject(SpreadsheetWorkspaceService);
   readonly currencies = CURRENCIES;
   readonly showLocalComments = environment.showLocalComments;
+  readonly peopleSearch = signal('');
+  readonly balanceFilter = signal<Currency | 'All'>('All');
   private readonly dialog = inject(MatDialog);
   private readonly toast = inject(ToastService);
   readonly personFilter = signal<PersonStatus | 'All'>('Active');
@@ -27,7 +29,17 @@ export class PeopleComponent {
       balances: positions.get(person.entityId) ?? { CAD: 0, INR: 0, USD: 0 },
     }));
   });
-  readonly visiblePeerRows = computed(() => this.peerRows().filter(({ person }) => this.personFilter() === 'All' || person?.status === this.personFilter()));
+  readonly visiblePeerRows = computed(() => {
+    const status = this.personFilter();
+    const currency = this.balanceFilter();
+    const query = this.peopleSearch().trim().toLocaleLowerCase();
+    return this.peerRows().filter(({ person, balances }) => {
+      if (status !== 'All' && person?.status !== status) return false;
+      if (currency !== 'All' && balances[currency] === 0) return false;
+      if (!query || !person) return !query;
+      return [person.name, person.email, person.phone, this.showLocalComments ? person.notes : ''].join(' ').toLocaleLowerCase().includes(query);
+    });
+  });
   readonly activeCount = computed(() => this.store.people().filter((person) => person.status === 'Active').length);
   readonly archivedCount = computed(() => this.store.people().filter((person) => person.status === 'Archived').length);
 
@@ -39,6 +51,7 @@ export class PeopleComponent {
   }
 
   formatMoney(value: number, currency: Currency): string { return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value); }
+  setBalanceFilter(value: string): void { this.balanceFilter.set(value === 'All' || this.currencies.includes(value as Currency) ? value as Currency | 'All' : 'All'); }
   balance(entityId: string, currency: Currency): number { return this.store.peerBalances().find((position) => position.entityId === entityId)?.balances[currency] ?? 0; }
 
   async archivePerson(person: Person): Promise<void> {

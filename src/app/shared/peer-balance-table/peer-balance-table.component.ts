@@ -15,6 +15,7 @@ export class PeerBalanceTableComponent {
   readonly entries = input.required<PeerBalanceRow[]>();
   readonly transactions = input<Transaction[]>([]);
   readonly limit = input<number | null>(null);
+  readonly emptyMessage = input('No people to show yet.');
   readonly allowEdit = input(false);
   readonly allowPersonActions = input(false);
   readonly editPerson = output<Person>();

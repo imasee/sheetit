@@ -3,7 +3,7 @@ import { DatePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { TransactionDialogComponent } from '../transaction-dialog/transaction-dialog.component';
-import { CURRENCIES, Currency, Transaction } from '../../core/models/tracksee.models';
+import { CURRENCIES, Currency, Transaction, TransactionStatus, TransactionType, TRANSACTION_TYPES } from '../../core/models/tracksee.models';
 import { TrackseeStore } from '../../core/store/tracksee.store';
 import { environment } from '../../../environments/environment';
 import { TransactionActionsDialogComponent } from '../transaction-actions-dialog/transaction-actions-dialog.component';
@@ -14,14 +14,34 @@ export class TransactionsComponent {
   readonly store = inject(TrackseeStore);
   readonly showLocalComments = environment.showLocalComments;
   readonly currencies = CURRENCIES;
-  readonly filter = signal<Currency | 'All'>('All');
-  readonly sortKey = signal<'date' | 'amount'>('date');
+  readonly types = TRANSACTION_TYPES;
+  readonly statuses: TransactionStatus[] = ['Pending', 'Cleared', 'Void'];
+  readonly currencyFilter = signal<Currency | 'All'>('All');
+  readonly typeFilter = signal<TransactionType | 'All'>('All');
+  readonly statusFilter = signal<TransactionStatus | 'All'>('All');
+  readonly search = signal('');
+  readonly sortKey = signal<'type' | 'date' | 'amount'>('date');
   readonly sortDirection = signal<'asc' | 'desc'>('desc');
   readonly rows = computed(() => {
-    const filter = this.filter();
+    const currencyFilter = this.currencyFilter();
+    const typeFilter = this.typeFilter();
+    const statusFilter = this.statusFilter();
+    const query = this.search().trim().toLocaleLowerCase();
     const direction = this.sortDirection() === 'asc' ? 1 : -1;
-    const selectedRows = this.store.transactions().filter((txn) => filter === 'All' || txn.currency === filter);
-    return selectedRows.sort((a, b) => direction * (this.sortKey() === 'date' ? a.date.localeCompare(b.date) : a.amount - b.amount));
+    const selectedRows = this.store.transactions().filter((txn) => {
+      if (currencyFilter !== 'All' && txn.currency !== currencyFilter) return false;
+      if (typeFilter !== 'All' && txn.type !== typeFilter) return false;
+      if (statusFilter !== 'All' && txn.status !== statusFilter) return false;
+      if (!query) return true;
+      const searchable = [this.typeLabel(txn), this.label(txn), this.transactionDescription(txn), this.personName(txn), txn.category, this.showLocalComments ? txn.notes : ''].join(' ').toLocaleLowerCase();
+      return searchable.includes(query);
+    });
+    return selectedRows.sort((a, b) => {
+      const comparison = this.sortKey() === 'date' ? a.date.localeCompare(b.date)
+        : this.sortKey() === 'amount' ? a.amount - b.amount
+          : this.typeLabel(a).localeCompare(this.typeLabel(b), undefined, { sensitivity: 'base' });
+      return direction * comparison;
+    });
   });
   private readonly dialog = inject(MatDialog);
   formatMoney(value: number, currency: Currency): string { return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value); }
@@ -31,6 +51,15 @@ export class TransactionsComponent {
       case 'Lent_To_Them': return 'Lent';
       case 'Borrowed_From_Them': return 'Borrowed';
       case 'Repayment_Received': return 'Received';
+      case 'Repayment_Sent': return 'Repayment sent';
+    }
+  }
+  typeLabelForFilter(type: TransactionType): string {
+    switch (type) {
+      case 'Expense': return 'Expense';
+      case 'Lent_To_Them': return 'Lent';
+      case 'Borrowed_From_Them': return 'Borrowed';
+      case 'Repayment_Received': return 'Repayment received';
       case 'Repayment_Sent': return 'Repayment sent';
     }
   }
@@ -54,18 +83,21 @@ export class TransactionsComponent {
   }
   transactionDescription(txn: Transaction): string { return txn.description?.trim() || txn.category?.trim() || '—'; }
   personName(txn: Transaction): string { return txn.type === 'Expense' ? '—' : this.store.getPerson(txn.entityId)?.name ?? 'Unknown person'; }
-  setFilter(value: string): void {
+  setCurrencyFilter(value: string): void {
     if (value !== 'All' && !this.currencies.includes(value as Currency)) return;
-    this.filter.set(value as Currency | 'All');
+    this.currencyFilter.set(value as Currency | 'All');
     if (value === 'All' && this.sortKey() === 'amount') this.sortKey.set('date');
   }
-  sortBy(key: 'date' | 'amount'): void {
-    if (key === 'amount' && this.filter() === 'All') return;
+  setTypeFilter(value: string): void { this.typeFilter.set(value === 'All' || TRANSACTION_TYPES.includes(value as TransactionType) ? value as TransactionType | 'All' : 'All'); }
+  setStatusFilter(value: string): void { this.statusFilter.set(value === 'All' || this.statuses.includes(value as TransactionStatus) ? value as TransactionStatus | 'All' : 'All'); }
+  sortBy(key: 'type' | 'date' | 'amount'): void {
+    if (key === 'amount' && this.currencyFilter() === 'All') return;
     if (this.sortKey() === key) this.sortDirection.update((direction) => direction === 'asc' ? 'desc' : 'asc');
     else { this.sortKey.set(key); this.sortDirection.set('desc'); }
   }
-  sortIcon(key: 'date' | 'amount'): string { return this.sortKey() === key ? this.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' : 'unfold_more'; }
-  sortAria(key: 'date' | 'amount'): string { return `${key === 'date' ? 'Date' : 'Amount'}, sorted ${this.sortKey() === key ? this.sortDirection() === 'asc' ? 'ascending' : 'descending' : 'not sorted'}`; }
+  sortIcon(key: 'type' | 'date' | 'amount'): string { return this.sortKey() === key ? this.sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' : 'unfold_more'; }
+  sortAria(key: 'type' | 'date' | 'amount'): string { const label = key[0].toUpperCase() + key.slice(1); return `${label}, sorted ${this.sortKey() === key ? this.sortDirection() === 'asc' ? 'ascending' : 'descending' : 'not sorted'}`; }
+  clearFilters(): void { this.search.set(''); this.currencyFilter.set('All'); this.typeFilter.set('All'); this.statusFilter.set('All'); this.sortKey.set('date'); this.sortDirection.set('desc'); }
   label(txn: Transaction): string {
     if (txn.type === 'Expense') return txn.category || 'Expense';
     const person = this.store.getPerson(txn.entityId)?.name ?? 'Unknown person';
