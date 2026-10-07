@@ -1,0 +1,21 @@
+:host { display: block; min-width: 0; }
+.date-field { position: relative; width: 100%; }
+.date-trigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 46px; text-align: left; cursor: pointer; }
+.date-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.date-trigger svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.date-trigger:disabled { cursor: not-allowed; opacity: .65; }
+.calendar-panel { width: min(310px, calc(100vw - 24px)); padding: 12px; border: 1px solid var(--theme-border-strong); border-radius: 12px; color: var(--text-primary); background: var(--theme-surface-raised); box-shadow: 0 12px 28px color-mix(in srgb, var(--theme-bg) 35%, transparent); }
+.calendar-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 10px; }
+.calendar-header strong { color: var(--text-primary); font-size: 13px; font-weight: 700; }
+.month-nav { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--theme-border); border-radius: 8px; color: var(--text-primary); background: var(--theme-surface); font-size: 24px; line-height: 1; cursor: pointer; }
+.month-nav:hover,.today-action:hover { background: var(--theme-surface-hover); }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.weekday { display: grid; place-items: center; min-height: 28px; color: var(--text-secondary); font-size: 10px; font-weight: 700; }
+.calendar-day,.calendar-blank { display: grid; place-items: center; min-width: 0; aspect-ratio: 1; border: 1px solid transparent; border-radius: 8px; }
+.calendar-day { color: var(--text-primary); background: transparent; font: inherit; font-size: 12px; cursor: pointer; }
+.calendar-day:hover { border-color: var(--theme-border); background: var(--theme-surface-hover); }
+.calendar-day.today { border-color: var(--theme-primary); }
+.calendar-day.selected { color: var(--text-on-primary); background: var(--theme-primary); font-weight: 700; }
+.calendar-day:focus-visible,.month-nav:focus-visible,.today-action:focus-visible,.date-trigger:focus-visible { outline: 2px solid var(--theme-primary); outline-offset: 2px; }
+.calendar-panel footer { display: flex; justify-content: flex-end; padding-top: 8px; }
+.today-action { min-height: 32px; padding: 0 10px; border: 1px solid var(--theme-border); border-radius: 8px; color: var(--text-primary); background: var(--theme-surface); font-size: 11px; font-weight: 600; cursor: pointer; }

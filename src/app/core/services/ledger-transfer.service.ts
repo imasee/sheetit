@@ -6,9 +6,10 @@ import {
 import { TrackseeStore } from '../store/tracksee.store';
 
 const CSV_HEADERS = [
-  'txId', 'date', 'entityId', 'type', 'amount', 'currency', 'category', 'notes', 'status', 'createdAt',
-  'personEntityId', 'personName', 'personPhone', 'personEmail', 'personNotes', 'payments',
+  'txId', 'date', 'entityId', 'type', 'amount', 'currency', 'category', 'notes', 'status', 'createdAt', 'description',
+  'personEntityId', 'personName', 'personPhone', 'personEmail', 'personNotes', 'personStatus', 'payments',
 ] as const;
+const REQUIRED_CSV_HEADERS = CSV_HEADERS.filter((header) => header !== 'personStatus' && header !== 'description');
 const STATUSES: readonly TransactionStatus[] = ['Cleared', 'Pending', 'Void'];
 
 @Injectable({ providedIn: 'root' })
@@ -25,8 +26,8 @@ export class LedgerTransferService {
     for (const { transaction, person, payments } of records) {
       const row: string[] = [
         transaction.txId, transaction.date, transaction.entityId, transaction.type, String(transaction.amount), transaction.currency,
-        transaction.category, transaction.notes, transaction.status, transaction.createdAt,
-        person?.entityId ?? '', person?.name ?? '', person?.phone ?? '', person?.email ?? '', person?.notes ?? '', JSON.stringify(payments),
+        transaction.category, transaction.notes, transaction.status, transaction.createdAt, transaction.description,
+        person?.entityId ?? '', person?.name ?? '', person?.phone ?? '', person?.email ?? '', person?.notes ?? '', person?.status ?? 'Active', JSON.stringify(payments),
       ];
       lines.push(row.map((value) => this.csvCell(value)).join(','));
     }
@@ -73,7 +74,7 @@ export class LedgerTransferService {
     const rows = this.parseCsv(source);
     if (rows.length < 2) throw new Error('The CSV does not contain any transaction rows.');
     const headers = rows[0].map((header) => header.replace(/^\uFEFF/, '').trim());
-    if (new Set(headers).size !== headers.length || CSV_HEADERS.some((header) => !headers.includes(header))) {
+    if (new Set(headers).size !== headers.length || REQUIRED_CSV_HEADERS.some((header) => !headers.includes(header))) {
       throw new Error('The CSV headers are missing or duplicated. Use a SheetFi CSV export.');
     }
     return rows.slice(1).filter((row) => row.some((value) => value.trim())).map((row, index) => {
@@ -86,11 +87,11 @@ export class LedgerTransferService {
       return this.normalizeRecord({
         transaction: {
           txId: values['txId'], date: values['date'], entityId: values['entityId'], type: values['type'], amount: values['amount'],
-          currency: values['currency'], category: values['category'], notes: values['notes'], status: values['status'], createdAt: values['createdAt'],
+          currency: values['currency'], category: values['category'], notes: values['notes'], status: values['status'], createdAt: values['createdAt'], description: values['description'] || '',
         },
         person: hasPerson ? {
           entityId: values['personEntityId'], name: values['personName'], phone: values['personPhone'],
-          email: values['personEmail'], notes: values['personNotes'],
+          email: values['personEmail'], notes: values['personNotes'], status: values['personStatus'] || 'Active',
         } : null,
         payments,
       }, `CSV row ${index + 2}`);
@@ -107,7 +108,7 @@ export class LedgerTransferService {
     const transaction: Transaction = {
       txId: this.readString(raw, 'txId', label), date: this.readString(raw, 'date', label),
       entityId: this.optionalString(raw, 'entityId'), type, amount, currency,
-      category: this.optionalString(raw, 'category'), notes: this.optionalString(raw, 'notes'),
+      category: this.optionalString(raw, 'category'), notes: this.optionalString(raw, 'notes'), description: this.optionalString(raw, 'description'),
       status, createdAt: this.optionalString(raw, 'createdAt'),
     };
     if (!transaction.txId || !transaction.date || !TRANSACTION_TYPES.includes(type) || !this.isCurrency(currency) || !Number.isFinite(amount) || amount <= 0 || !STATUSES.includes(status)) {
@@ -121,8 +122,9 @@ export class LedgerTransferService {
       person = {
         entityId: this.readString(rawPerson, 'entityId', label), name: this.readString(rawPerson, 'name', label),
         phone: this.optionalString(rawPerson, 'phone'), email: this.optionalString(rawPerson, 'email'), notes: this.optionalString(rawPerson, 'notes'),
+        status: (this.optionalString(rawPerson, 'status') || 'Active') as Person['status'],
       };
-      if (!person.entityId || !person.name) throw new Error(`${label} has a person without an ID or name.`);
+      if (!person.entityId || !person.name || !['Active', 'Archived'].includes(person.status)) throw new Error(`${label} has invalid person details or status.`);
     }
     if (type !== 'Expense' && (!person || person.entityId !== transaction.entityId)) {
       throw new Error(`${label} must include the matching person for transaction ${transaction.txId}.`);

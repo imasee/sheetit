@@ -1,0 +1,11 @@
+<section class="edit-dialog" aria-labelledby="transaction-edit-title">
+  <header class="edit-heading"><div><span class="eyebrow">LEDGER ENTRY</span><h2 id="transaction-edit-title">Edit transaction</h2><p>Update the amount, date, or ledger status.</p></div><button class="close-button" mat-dialog-close type="button" aria-label="Close"><mat-icon>close</mat-icon></button></header>
+  <form class="edit-content" [formGroup]="form" (ngSubmit)="save()">
+    <div class="field"><label for="edit-transaction-amount">Amount · {{ transaction.currency }}</label><input id="edit-transaction-amount" class="ts-control" type="text" tsThousandsSeparator inputmode="decimal" autocomplete="off" formControlName="amount" placeholder="0.00">@if (form.controls.amount.touched && form.controls.amount.invalid) { <span class="field-error">Enter an amount greater than zero.</span> }</div>
+    <div class="field"><span>Date</span><ts-date-field formControlName="date" label="Transaction date" inputId="edit-transaction-date" /></div>
+    <div class="field"><label for="edit-transaction-description">Description</label><input id="edit-transaction-description" class="ts-control" formControlName="description" maxlength="200" placeholder="What was this transaction for?"></div>
+    <div class="field"><label for="edit-transaction-status">Status</label><select id="edit-transaction-status" class="ts-control" formControlName="status">@for (status of statuses; track status) { <option [value]="status">{{ status === 'Void' ? 'Removed from ledger (void)' : status === 'Cleared' ? 'Cleared (settled)' : status }}</option> }</select><small>Cleared entries no longer affect active balances. Void entries stay in history.</small></div>
+    @if (error()) { <p class="edit-error" role="alert">{{ error() }}</p> }
+    <footer><button class="ts-button-secondary" type="button" mat-dialog-close [disabled]="saving()">Cancel</button><button class="ts-button-primary" type="submit" [disabled]="saving()"><mat-icon>{{ saving() ? 'sync' : 'check' }}</mat-icon>{{ saving() ? 'Saving…' : 'Update transaction' }}</button></footer>
+  </form>
+</section>

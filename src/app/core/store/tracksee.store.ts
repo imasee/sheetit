@@ -87,7 +87,7 @@ export const TrackseeStore = signalStore(
         throw error;
       }
     },
-    async addPayment(payment: Payment): Promise<void> {
+    async addPayment(payment: Payment): Promise<'recorded' | 'cleared' | 'status-update-failed'> {
       const transaction = store.transactions().find((item) => item.txId === payment.txId);
       if (!transaction || transaction.type === 'Expense' || transaction.status !== 'Pending') throw new Error('Payments can only be added to a pending peer transaction.');
       const expectedDirection = transaction.type === 'Lent_To_Them' ? 'Received' : 'Sent';
@@ -98,14 +98,70 @@ export const TrackseeStore = signalStore(
       try {
         await sheets.appendPayment(payment);
         patchState(store, (state) => ({ payments: [...state.payments, payment], syncStatus: 'ready' as const, error: null, lastSyncedAt: new Date().toISOString() }));
+        const totalPaid = allocated + payment.amount;
+        if (Math.round(totalPaid * 100) >= Math.round(transaction.amount * 100)) {
+          try {
+            await sheets.updateTransactionStatus(transaction.txId, 'Cleared');
+            patchState(store, (state) => ({ transactions: state.transactions.map((item) => item.txId === transaction.txId ? { ...item, status: 'Cleared' as const } : item), lastSyncedAt: new Date().toISOString() }));
+            return 'cleared';
+          } catch {
+            return 'status-update-failed';
+          }
+        }
+        return 'recorded';
       } catch (error) {
         patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to save this payment.' });
+        throw error;
+      }
+    },
+    async updatePayment(payment: Payment): Promise<boolean> {
+      const transaction = store.transactions().find((item) => item.txId === payment.txId);
+      if (!transaction || transaction.type === 'Expense') throw new Error('This payment is not linked to an available peer transaction.');
+      const expectedDirection = transaction.type === 'Lent_To_Them' ? 'Received' : 'Sent';
+      if (payment.direction !== expectedDirection || payment.currency !== transaction.currency) throw new Error('Payment direction and currency must match the selected transaction.');
+      const allocated = store.payments().filter((item) => item.txId === payment.txId && item.paymentId !== payment.paymentId && item.status === 'Cleared').reduce((total, item) => total + item.amount, 0);
+      if (payment.status === 'Cleared' && payment.amount > Math.max(0, transaction.amount - allocated)) throw new Error('Payment exceeds the transaction’s remaining balance.');
+      patchState(store, { syncStatus: 'syncing', error: null });
+      try {
+        await sheets.updatePayment(payment);
+        const priorPaid = store.payments().filter((item) => item.txId === payment.txId && item.status === 'Cleared').reduce((total, item) => total + item.amount, 0);
+        const newPaid = store.payments().filter((item) => item.txId === payment.txId && item.paymentId !== payment.paymentId && item.status === 'Cleared').reduce((total, item) => total + item.amount, 0) + (payment.status === 'Cleared' ? payment.amount : 0);
+        patchState(store, (state) => ({ payments: state.payments.map((item) => item.paymentId === payment.paymentId ? payment : item), syncStatus: 'ready' as const, error: null, lastSyncedAt: new Date().toISOString() }));
+        const coveredBefore = Math.round(priorPaid * 100) >= Math.round(transaction.amount * 100);
+        const coveredAfter = Math.round(newPaid * 100) >= Math.round(transaction.amount * 100);
+        const nextStatus: TransactionStatus | null = coveredAfter && transaction.status === 'Pending' ? 'Cleared' : !coveredAfter && coveredBefore && transaction.status === 'Cleared' ? 'Pending' : null;
+        if (nextStatus) {
+          try {
+            await sheets.updateTransactionStatus(transaction.txId, nextStatus);
+            patchState(store, (state) => ({ transactions: state.transactions.map((item) => item.txId === transaction.txId ? { ...item, status: nextStatus } : item), lastSyncedAt: new Date().toISOString() }));
+          } catch {
+            return false;
+          }
+        }
+        return true;
+      } catch (error) {
+        patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to update this payment.' });
         throw error;
       }
     },
     async setTransactionStatus(txId: string, status: TransactionStatus): Promise<void> {
       await sheets.updateTransactionStatus(txId, status);
       patchState(store, (state) => ({ transactions: state.transactions.map((item) => item.txId === txId ? { ...item, status } : item), lastSyncedAt: new Date().toISOString() }));
+    },
+    async updateTransaction(transaction: Transaction): Promise<void> {
+      if (!Number.isFinite(transaction.amount) || transaction.amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(transaction.date)) throw new Error('Enter a valid date and an amount greater than zero.');
+      const current = store.transactions().find((item) => item.txId === transaction.txId);
+      if (!current) throw new Error('This transaction is no longer in the selected ledger. Sync and try again.');
+      const clearedPayments = store.payments().filter((payment) => payment.txId === transaction.txId && payment.status === 'Cleared').reduce((total, payment) => total + payment.amount, 0);
+      if (clearedPayments > transaction.amount + 0.000001) throw new Error('The amount cannot be lower than payments already recorded. Edit or remove those payments first.');
+      patchState(store, { syncStatus: 'syncing', error: null });
+      try {
+        await sheets.updateTransaction(transaction);
+        patchState(store, (state) => ({ transactions: state.transactions.map((item) => item.txId === transaction.txId ? transaction : item), syncStatus: 'ready' as const, error: null, lastSyncedAt: new Date().toISOString() }));
+      } catch (error) {
+        patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to update the transaction.' });
+        throw error;
+      }
     },
     async reopenClearedPeerTransactions(): Promise<number> {
       const transactions = store.transactions().filter((item) => item.status === 'Cleared' && item.entityId && item.type !== 'Expense');
@@ -148,6 +204,19 @@ export const TrackseeStore = signalStore(
         }));
       } catch (error) {
         patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to update this person.' });
+        throw error;
+      }
+    },
+    async deletePerson(entityId: string): Promise<void> {
+      if (store.transactions().some((transaction) => transaction.entityId === entityId)) {
+        throw new Error('This person has ledger history. Archive them to preserve transaction and payment records.');
+      }
+      patchState(store, { syncStatus: 'syncing', error: null });
+      try {
+        await sheets.deletePerson(entityId);
+        patchState(store, (state) => ({ people: state.people.filter((person) => person.entityId !== entityId), syncStatus: 'ready' as const, error: null, lastSyncedAt: new Date().toISOString() }));
+      } catch (error) {
+        patchState(store, { syncStatus: 'error', error: error instanceof Error ? error.message : 'Unable to delete this person.' });
         throw error;
       }
     },

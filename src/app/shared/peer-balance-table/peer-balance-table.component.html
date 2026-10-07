@@ -6,9 +6,9 @@
       <tbody>
         @for (entry of visibleEntries(); track entry.entityId) {
           <tr class="peer-row">
-            <td><button class="peer-name-button" type="button" [attr.aria-expanded]="isExpanded(entry.entityId)" [attr.aria-controls]="'peer-details-' + entry.entityId" (click)="toggle(entry.entityId)"><mat-icon aria-hidden="true">{{ isExpanded(entry.entityId) ? 'expand_more' : 'chevron_right' }}</mat-icon><span>{{ entry.person?.name ?? 'Unknown person' }}</span></button><span class="peer-contact">{{ entry.person?.email || entry.person?.phone || 'Peer ledger' }}</span></td>
+            <td><button class="peer-name-button" type="button" [attr.aria-expanded]="isExpanded(entry.entityId)" [attr.aria-controls]="'peer-details-' + entry.entityId" (click)="toggle(entry.entityId)"><mat-icon aria-hidden="true">{{ isExpanded(entry.entityId) ? 'expand_more' : 'chevron_right' }}</mat-icon><span>{{ entry.person?.name ?? 'Unknown person' }}</span>@if (entry.person?.status === 'Archived') { <span class="archived-badge">Archived</span> }</button><span class="peer-contact">{{ entry.person?.email || entry.person?.phone || 'Peer ledger' }}</span></td>
             @for (currency of currencies; track currency) { <td class="peer-amount" [class.positive]="entry.balances[currency] > 0" [class.negative]="entry.balances[currency] < 0">{{ entry.balances[currency] ? formatMoney(entry.balances[currency], currency) : '—' }}</td> }
-            <td class="peer-actions">@if (allowEdit() && entry.person) { <button class="table-action" type="button" [attr.aria-label]="'Edit ' + entry.person.name" (click)="editPerson.emit(entry.person!)"><mat-icon aria-hidden="true">edit</mat-icon><span>Edit</span></button> }</td>
+            <td class="peer-actions">@if (allowEdit() && entry.person) { <button class="table-action" type="button" [attr.aria-label]="'Edit ' + entry.person.name" (click)="editPerson.emit(entry.person!)"><mat-icon aria-hidden="true">edit</mat-icon><span>Edit</span></button> }@if (allowPersonActions() && entry.person) { @if (entry.person.status === 'Active') { <button class="table-action" type="button" [attr.aria-label]="'Archive ' + entry.person.name" (click)="archivePerson.emit(entry.person!)"><mat-icon aria-hidden="true">archive</mat-icon><span>Archive</span></button> } @else { <button class="table-action" type="button" [attr.aria-label]="'Restore ' + entry.person.name" (click)="restorePerson.emit(entry.person!)"><mat-icon aria-hidden="true">unarchive</mat-icon><span>Restore</span></button> } @if (!hasTransactions(entry.entityId)) { <button class="table-action table-action-danger" type="button" [attr.aria-label]="'Delete ' + entry.person.name" (click)="deletePerson.emit(entry.person!)"><mat-icon aria-hidden="true">delete</mat-icon><span>Delete</span></button> } }</td>
           </tr>
           @if (isExpanded(entry.entityId)) {
             <tr class="detail-row"><td [attr.colspan]="currencies.length + 2"><div class="peer-details" [id]="'peer-details-' + entry.entityId">
@@ -25,6 +25,6 @@
       </tbody>
     </table>
   } @else {
-    <div class="peer-empty"><mat-icon>group</mat-icon><span>No people to show yet.</span></div>
+    <div class="peer-empty"><mat-icon>group</mat-icon><span>{{ emptyMessage() }}</span></div>
   }
 </div>

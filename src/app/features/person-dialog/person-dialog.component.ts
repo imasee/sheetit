@@ -37,6 +37,7 @@ export class PersonDialogComponent {
       entityId: this.data.person?.entityId ?? crypto.randomUUID(),
       name: values.name.trim(), phone: values.phone.trim(), email: values.email.trim(),
       notes: this.showLocalComments ? values.notes.trim() : (this.data.person?.notes ?? ''),
+      status: this.data.person?.status ?? 'Active',
     };
     if (!person.name) {
       this.error.set('Enter a name for this person.');

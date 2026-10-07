@@ -8,6 +8,10 @@ h1 { margin: 0; color: var(--text-primary); font: 700 28px Manrope, sans-serif; 
 .table-intro h2 { margin: 0; color: var(--text-primary); font: 700 16px Manrope, sans-serif; }
 .table-intro p { margin: 5px 0 0; color: var(--text-secondary); font-size: 12px; }
 .table-intro > span { color: var(--text-secondary); font-size: 11px; }
+.table-tools { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 9px; color: var(--text-secondary); font-size: 11px; }
+.people-filter { width: auto; min-width: 130px; min-height: 36px; padding-block: 6px; }
+.people-search { display: flex; align-items: center; gap: 7px; min-width: 190px; }.people-search mat-icon { width: 17px; height: 17px; font-size: 17px; }.people-search input { min-height: 36px; padding-block: 6px; font-size: 12px; }
+.people-search { position: relative; }.people-search mat-icon { position: absolute; left: 9px; color: var(--text-secondary); }.people-search input { width: 100%; padding-left: 32px; }.table-tools > label:not(.people-search) { color: var(--text-secondary); font-size: 10px; font-weight: 600; }
 .table-empty { display: grid; justify-items: center; gap: 10px; min-height: 210px; padding: 28px; border: 1px solid var(--theme-border); border-radius: 12px; color: var(--text-secondary); background: var(--theme-surface); text-align: center; }
 .table-empty mat-icon { width: 28px; height: 28px; font-size: 28px; }
 .table-empty strong { color: var(--text-primary); font-size: 14px; }
