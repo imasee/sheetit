@@ -23,7 +23,7 @@ export const TrackseeStore = signalStore(
     const peerBalances = computed<PeerPosition[]>(() => {
       const positions = new Map<string, Record<Currency, number>>();
       for (const txn of transactions()) {
-        if (txn.status !== 'Cleared' || !txn.entityId || txn.type === 'Expense') continue;
+        if (txn.status !== 'Pending' || !txn.entityId || txn.type === 'Expense') continue;
         const balances = positions.get(txn.entityId) ?? emptyBalances();
         const direction = txn.type === 'Lent_To_Them' || txn.type === 'Repayment_Sent' ? 1 : -1;
         balances[txn.currency] += direction * txn.amount;
@@ -33,7 +33,7 @@ export const TrackseeStore = signalStore(
       for (const payment of payments()) {
         if (payment.status !== 'Cleared') continue;
         const txn = txById.get(payment.txId);
-        if (!txn || txn.status !== 'Cleared' || txn.type === 'Expense') continue;
+        if (!txn || txn.status !== 'Pending' || txn.type === 'Expense') continue;
         const balances = positions.get(txn.entityId) ?? emptyBalances();
         balances[payment.currency] += payment.direction === 'Received' ? -payment.amount : payment.amount;
         positions.set(txn.entityId, balances);
@@ -89,7 +89,7 @@ export const TrackseeStore = signalStore(
     },
     async addPayment(payment: Payment): Promise<void> {
       const transaction = store.transactions().find((item) => item.txId === payment.txId);
-      if (!transaction || transaction.type === 'Expense') throw new Error('Payments can only be linked to a peer transaction.');
+      if (!transaction || transaction.type === 'Expense' || transaction.status !== 'Pending') throw new Error('Payments can only be added to a pending peer transaction.');
       const expectedDirection = transaction.type === 'Lent_To_Them' ? 'Received' : 'Sent';
       if (payment.direction !== expectedDirection || payment.currency !== transaction.currency) throw new Error('Payment direction and currency must match the selected transaction.');
       const allocated = store.payments().filter((item) => item.txId === payment.txId && item.status === 'Cleared').reduce((total, item) => total + item.amount, 0);

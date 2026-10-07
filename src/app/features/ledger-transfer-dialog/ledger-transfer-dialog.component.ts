@@ -35,7 +35,7 @@ export class LedgerTransferDialogComponent {
   download(format: 'json' | 'csv'): void {
     if (!this.canExport()) return;
     try {
-      const content = format === 'json' ? this.transfer.toJson() : this.transfer.toCsv();
+      const content = this.exportContent(format);
       const mime = format === 'json' ? 'application/json;charset=utf-8' : 'text/csv;charset=utf-8';
       const blob = new Blob([content], { type: mime });
       const url = URL.createObjectURL(blob);
@@ -50,6 +50,22 @@ export class LedgerTransferDialogComponent {
       void this.announcer.announce(message, 'polite');
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Could not export this ledger.');
+    }
+  }
+
+  async copyToClipboard(format: 'json' | 'csv'): Promise<void> {
+    if (!this.canExport()) return;
+    this.error.set(null);
+    this.message.set(null);
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard access is unavailable. Use the download option instead.');
+      await navigator.clipboard.writeText(this.exportContent(format));
+      const message = `${format.toUpperCase()} ledger data copied to the clipboard.`;
+      this.message.set(message);
+      this.toast.show(message, 'success');
+      await this.announcer.announce(message, 'polite');
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'Could not copy ledger data to the clipboard.');
     }
   }
 
@@ -101,5 +117,9 @@ export class LedgerTransferDialogComponent {
     const name = this.workspace.active()?.ledgerName ?? 'ledger';
     const safe = name.normalize('NFKD').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
     return `sheetfi-${safe || 'ledger'}-${new Date().toISOString().slice(0, 10)}`;
+  }
+
+  private exportContent(format: 'json' | 'csv'): string {
+    return format === 'json' ? this.transfer.toJson() : this.transfer.toCsv();
   }
 }

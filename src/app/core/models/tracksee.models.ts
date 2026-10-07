@@ -9,6 +9,7 @@ export const TRANSACTION_TYPES = [
   'Repayment_Sent',
 ] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
+/** Pending entries affect active balances; Cleared and Void entries do not. */
 export type TransactionStatus = 'Cleared' | 'Pending' | 'Void';
 export type PaymentDirection = 'Received' | 'Sent';
 
